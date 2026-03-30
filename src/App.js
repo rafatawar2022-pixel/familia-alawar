@@ -1,16 +1,5 @@
 import React, { useState } from 'react';
 
-const COLORS = {
-  bg: '#333333',
-  header: '#c0392b',
-  btn: '#c0392b',
-  btnHover: '#a93226',
-  white: '#ffffff',
-  surface: '#3d3d3d',
-  surface2: '#444444',
-  border: 'rgba(255,255,255,0.1)',
-};
-
 const USERS = [
   { id: 1, name: 'رفعت', email: 'rafat@familia-alawar.com', password: 'Rafat1983', emoji: '👨', role: 'الأب' },
   { id: 2, name: 'الزوجة', email: 'esposa@familia-alawar.com', password: 'Esposa2024', emoji: '👩', role: 'الأم' },
@@ -29,6 +18,23 @@ const emails = [
   { id: 2, from: 'الابن', subject: 'نتائج المدرسة 📚', preview: 'حصلت على علامة ممتازة...', time: '09:15', read: true, emoji: '👦' },
   { id: 3, from: 'رفعت', subject: 'رحلة عائلية 🏖️', preview: 'بدي أقترح رحلة...', time: 'أمس', read: true, emoji: '👨' },
 ];
+
+const C = {
+  bg: '#333333',
+  header: '#c0392b',
+  btn: '#c0392b',
+  surface: '#3d3d3d',
+  surface2: '#444444',
+  border: 'rgba(255,255,255,0.08)',
+};
+
+const s = {
+  input: { background: '#444', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '12px 16px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 15, outline: 'none', width: '100%', boxSizing: 'border-box' },
+  btn: { background: C.btn, border: 'none', color: '#fff', padding: '13px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700, width: '100%' },
+  card: { background: '#3d3d3d', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden' },
+  cardHeader: { padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#383838' },
+  navBtn: (active) => ({ background: active ? C.btn : 'transparent', border: active ? 'none' : '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 18px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 14, fontWeight: 700 }),
+};
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -57,116 +63,70 @@ export default function App() {
     setMsg('');
   };
 
-  const s = {
-    input: { background: '#444444', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '12px 16px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 15, outline: 'none', width: '100%', boxSizing: 'border-box' },
-    btn: { background: COLORS.btn, border: 'none', color: '#fff', padding: '13px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700, width: '100%' },
-    card: { background: '#3d3d3d', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden' },
-    cardHeader: { padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#383838' },
-    navBtn: (active) => ({ background: active ? COLORS.btn : 'transparent', border: active ? 'none' : '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 18px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 14, fontWeight: 700 }),
-  };
-
-  // LOGIN PAGE
+  // ======= LOGIN PAGE =======
   if (!user) {
     return (
-      <div style={{ fontFamily: 'Tajawal, sans-serif', background: COLORS.bg, minHeight: '100vh', color: '#fff', direction: 'rtl' }}>
+      <div style={{ fontFamily: 'Tajawal, sans-serif', background: C.bg, minHeight: '100vh', color: '#fff', direction: 'rtl' }}>
         
-        {/* Header أحمر */}
-        <div style={{ background: COLORS.header, padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 52, height: 52, background: 'rgba(255,255,255,0.2)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🏠</div>
-            <div>
-              <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 22 }}>Familia Alawar</div>
-              <div style={{ fontSize: 13, opacity: 0.85 }}>منصة الأمان العائلي</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 24, fontSize: 13, opacity: 0.9 }}>
-            <span>🔒 موقع خاص</span>
-            <span>👨‍👩‍👧‍👦 عائلة Alawar</span>
-          </div>
+        {/* Header */}
+        <div style={{ background: C.header, padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 20 }}>Familia Alawar</span>
+          <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, opacity: 0.85 }}>🔒 موقع خاص بعائلة Alawar</span>
         </div>
 
-        {/* Hero Section */}
-        <div style={{ textAlign: 'center', padding: '60px 32px 40px' }}>
-          <img src="/logo.jpg" alt="Familia Alawar" style={{ width: 180, height: 180, borderRadius: 20, marginBottom: 16, objectFit: 'cover' }} />
-          <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 36, margin: '0 0 12px', color: '#fff' }}>
+        {/* Main */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', padding: '40px 24px' }}>
+          
+          {/* Logo */}
+          <img src="/logo.jpg" alt="Familia Alawar" style={{ width: 180, height: 180, borderRadius: '50%', marginBottom: 20, objectFit: 'cover', border: '4px solid #c0392b', boxShadow: '0 0 30px rgba(192,57,43,0.4)' }} />
+
+          {/* Welcome */}
+          <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 28, margin: '0 0 8px', textAlign: 'center' }}>
             أهلاً بكم في موقع عائلة Alawar
           </h1>
-          <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 16, color: 'rgba(255,255,255,0.7)', maxWidth: 500, margin: '0 auto 40px' }}>
-            منصة عائلية خاصة لتواصل أفراد العائلة ومتابعة أماكنهم والتواصل معهم بأمان
+          <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 40, textAlign: 'center' }}>
+            منصة عائلية خاصة وآمنة
           </p>
 
-          {/* Features */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 50 }}>
-            {[
-              { icon: '📍', title: 'تتبع المواقع', desc: 'اعرف مكان عائلتك دائماً' },
-              { icon: '🆘', title: 'زر الطوارئ', desc: 'تنبيه فوري عند الحاجة' },
-              { icon: '💬', title: 'دردشة عائلية', desc: 'تواصل مع عائلتك' },
-              { icon: '📧', title: 'إيميل خاص', desc: 'رسائل داخلية آمنة' },
-            ].map((f, i) => (
-              <div key={i} style={{ background: '#3d3d3d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '20px 24px', width: 160, textAlign: 'center' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>{f.icon}</div>
-                <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{f.title}</div>
-                <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Login Card */}
-        <div style={{ maxWidth: 420, margin: '0 auto', padding: '0 24px 60px' }}>
-          <div style={{ background: '#3d3d3d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, overflow: 'hidden' }}>
-            
-            {/* Card Header */}
-            <div style={{ background: COLORS.header, padding: '18px 24px', textAlign: 'center' }}>
+          {/* Login Card */}
+          <div style={{ width: '100%', maxWidth: 400, background: '#3d3d3d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, overflow: 'hidden' }}>
+            <div style={{ background: C.header, padding: '16px 24px', textAlign: 'center' }}>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 18, margin: 0 }}>تسجيل الدخول</h2>
               <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, margin: '4px 0 0', opacity: 0.85 }}>للأعضاء المعتمدين فقط</p>
             </div>
 
             <div style={{ padding: 28 }}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'block' }}>الإيميل</label>
+                <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 6, display: 'block' }}>الإيميل</label>
                 <input type="email" placeholder="rafat@familia-alawar.com" value={loginData.email}
                   onChange={e => setLoginData({ ...loginData, email: e.target.value })} style={s.input} />
               </div>
-
               <div style={{ marginBottom: 20 }}>
-                <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'block' }}>كلمة المرور</label>
+                <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 6, display: 'block' }}>كلمة المرور</label>
                 <input type="password" placeholder="••••••••" value={loginData.password}
                   onChange={e => setLoginData({ ...loginData, password: e.target.value })}
                   onKeyPress={e => e.key === 'Enter' && handleLogin()} style={s.input} />
               </div>
-
               {loginError && (
-                <div style={{ background: 'rgba(192,57,43,0.2)', border: '1px solid rgba(192,57,43,0.4)', borderRadius: 10, padding: '10px 14px', color: '#ff6b6b', fontSize: 13, textAlign: 'center', marginBottom: 16 }}>
+                <div style={{ background: 'rgba(192,57,43,0.2)', border: '1px solid rgba(192,57,43,0.4)', borderRadius: 10, padding: '10px', color: '#ff6b6b', fontSize: 13, textAlign: 'center', marginBottom: 16, fontFamily: 'Tajawal, sans-serif' }}>
                   {loginError}
                 </div>
               )}
-
               <button onClick={handleLogin} style={s.btn}>دخول ←</button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }}></div>
-                <span style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>أو</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }}></div>
-              </div>
-
-              <button onClick={() => {}} style={{ ...s.btn, background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                👆 الدخول ببصمة الإصبع
-              </button>
             </div>
           </div>
 
-          <p style={{ textAlign: 'center', fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 20 }}>
-            🔒 موقع خاص بعائلة Alawar — غير مرخص للدخول لغير أفراد العائلة
+          <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 24, textAlign: 'center' }}>
+            🔒 غير مرخص للدخول لغير أفراد العائلة
           </p>
         </div>
       </div>
     );
   }
 
-  // MAIN APP
+  // ======= MAIN APP =======
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', background: COLORS.bg, minHeight: '100vh', color: '#fff', direction: 'rtl' }}>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', background: C.bg, minHeight: '100vh', color: '#fff', direction: 'rtl' }}>
 
       {sos && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -180,9 +140,9 @@ export default function App() {
       )}
 
       {/* HEADER */}
-      <div style={{ background: COLORS.header, padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: C.header, padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.2)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🏠</div>
+          <img src="/logo.jpg" alt="logo" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }} />
           <div>
             <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16 }}>Familia Alawar</div>
             <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, opacity: 0.85 }}>أهلاً {user.name} {user.emoji}</div>
@@ -205,15 +165,15 @@ export default function App() {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
               {[
-                { label: 'أفراد العائلة', value: '4', icon: '👨‍👩‍👧‍👦', color: '#fff' },
-                { label: 'متصلون الآن', value: '3', icon: '🟢', color: '#2ecc71' },
-                { label: 'مناطق آمنة', value: '2', icon: '📍', color: '#fff' },
-                { label: 'تنبيهات اليوم', value: '0', icon: '🔔', color: '#fff' },
+                { label: 'أفراد العائلة', value: '4', icon: '👨‍👩‍👧‍👦' },
+                { label: 'متصلون الآن', value: '3', icon: '🟢' },
+                { label: 'مناطق آمنة', value: '2', icon: '📍' },
+                { label: 'تنبيهات اليوم', value: '0', icon: '🔔' },
               ].map((stat, i) => (
                 <div key={i} style={{ ...s.card, padding: 20 }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>{stat.icon}</div>
                   <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>{stat.label}</div>
-                  <div style={{ fontFamily: 'Cairo, sans-serif', fontSize: 32, fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                  <div style={{ fontFamily: 'Cairo, sans-serif', fontSize: 32, fontWeight: 700 }}>{stat.value}</div>
                 </div>
               ))}
             </div>
@@ -249,7 +209,7 @@ export default function App() {
                         <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{m.name}</div>
                         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>📍 {m.location}</div>
                       </div>
-                      <div style={{ textAlign: 'left' }}>
+                      <div>
                         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
                         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>🔋 {m.battery}%</div>
                       </div>
