@@ -78,7 +78,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', padding: '40px 24px' }}>
           
           {/* Logo */}
-          <img src="/logo.jpg" alt="Familia Alawar" style={{ width: 180, height: 180, borderRadius: '50%', marginBottom: 20, objectFit: 'cover', border: '4px solid #c0392b', boxShadow: '0 0 30px rgba(192,57,43,0.4)' }} />
+          <img src="/logo.png" alt="Familia Alawar" style={{ width: 150, height: 150, borderRadius: 16, marginBottom: 20, objectFit: 'contain' }} />
 
           {/* Welcome */}
           <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 28, margin: '0 0 8px', textAlign: 'center' }}>
@@ -142,7 +142,7 @@ export default function App() {
       {/* HEADER */}
       <div style={{ background: C.header, padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/logo.jpg" alt="logo" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }} />
+          <img src="/logo.png" alt="logo" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }} />
           <div>
             <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16 }}>Familia Alawar</div>
             <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, opacity: 0.85 }}>أهلاً {user.name} {user.emoji}</div>
