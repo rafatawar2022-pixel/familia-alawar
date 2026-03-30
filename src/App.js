@@ -87,7 +87,7 @@ export default function App() {
 
         {/* Hero Section */}
         <div style={{ textAlign: 'center', padding: '60px 32px 40px' }}>
-          <div style={{ fontSize: 64, marginBottom: 16 }}>🏠</div>
+          <img src="/logo.jpg" alt="Familia Alawar" style={{ width: 180, height: 180, borderRadius: 20, marginBottom: 16, objectFit: 'cover' }} />
           <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 36, margin: '0 0 12px', color: '#fff' }}>
             أهلاً بكم في موقع عائلة Alawar
           </h1>
