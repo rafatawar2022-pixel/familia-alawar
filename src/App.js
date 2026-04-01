@@ -85,6 +85,8 @@ export default function App() {
   ]);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
+  const [chatRoom, setChatRoom] = useState('group');
+  const [replyTo, setReplyTo] = useState(null);
 
   const handleLogin = () => {
     const found = USERS.find(u => u.email === loginData.email && u.password === loginData.password);
@@ -352,73 +354,139 @@ export default function App() {
 
 {/* CHAT */}
 {page === 'chat' && (
-  <div>
-    <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>💬 الدردشة العائلية</h2>
-    <div style={{ ...s.card, display: 'flex', flexDirection: 'column', height: 550 }}>
+  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, height: 600 }}>
+    
+    {/* قائمة المحادثات */}
+    <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
+      <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>💬 المحادثات</span></div>
       
+      {/* المجموعة */}
+      <div onClick={() => setChatRoom('group')}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === 'group' ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === 'group' ? '3px solid #c0392b' : '3px solid transparent' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👨‍👩‍👧‍👦</div>
+        <div>
+          <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>المجموعة العائلية</div>
+          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>الكل</div>
+        </div>
+      </div>
+
+      {/* محادثات خاصة */}
+      {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
+        <div key={i} onClick={() => setChatRoom(m.name)}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? '3px solid #c0392b' : '3px solid transparent' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+          <div>
+            <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div>
+            <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* نافذة الدردشة */}
+    <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
+      <div style={s.cardHeader}>
+        <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>
+          {chatRoom === 'group' ? '👨‍👩‍👧‍👦 المجموعة العائلية' : `💬 ${chatRoom}`}
+        </span>
+      </div>
+
       {/* الرسائل */}
-      <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {messages.map(m => (
-          <div key={m.id} style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-              {MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}
-            </div>
-            <div style={{ maxWidth: '70%' }}>
-              <div style={{ background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
-                {m.image && <img src={m.image} alt="صورة" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
-                {m.text}
+      <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {messages.filter(m => chatRoom === 'group' ? m.room === 'group' || !m.room : (m.room === chatRoom && (m.sender === user.name || m.to === user.name))).map(m => (
+          <div key={m.id}>
+            {/* رد على رسالة */}
+            {replyTo && replyTo.id === m.id && (
+              <div style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: 8, padding: '4px 10px', marginBottom: 4, fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>
+                ↩️ رد على: {m.text}
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2, textAlign: m.sender === user.name ? 'left' : 'right' }}>✅ تم الإرسال</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                {MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}
+              </div>
+              <div style={{ maxWidth: '70%', position: 'relative' }}>
+                {m.replyTo && (
+                  <div style={{ background: 'rgba(255,255,255,0.05)', borderRight: '2px solid #c0392b', padding: '4px 8px', borderRadius: 6, marginBottom: 4, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>
+                    ↩️ {m.replyTo}
+                  </div>
+                )}
+                <div style={{ background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
+                  {m.image && <img src={m.image} alt="صورة" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
+                  {m.text}
+                </div>
+                {/* أزرار الرد والحذف */}
+                <div style={{ display: 'flex', gap: 4, marginTop: 3, justifyContent: m.sender === user.name ? 'flex-start' : 'flex-end' }}>
+                  <button onClick={() => setReplyTo(m)}
+                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>
+                    ↩️ رد
+                  </button>
+                  {m.sender === user.name && (
+                    <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))}
+                      style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>
+                      🗑️ حذف
+                    </button>
+                  )}
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', padding: '2px 6px' }}>✅</span>
+                </div>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* شريط الإيموجي */}
-      <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {/* رد على رسالة */}
+      {replyTo && (
+        <div style={{ padding: '8px 16px', background: 'rgba(192,57,43,0.1)', borderTop: '1px solid rgba(192,57,43,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>↩️ رد على: {replyTo.text?.substring(0, 30)}...</span>
+          <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>✕</button>
+        </div>
+      )}
+
+      {/* إيموجي */}
+      <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6 }}>
         {['😊','😂','❤️','👍','🎉','😢','😮','🙏','👋','🔥'].map(emoji => (
           <button key={emoji} onClick={() => setMsg(prev => prev + emoji)}
-            style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', padding: '4px', borderRadius: 6, transition: 'background 0.2s' }}
-            onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
-            onMouseLeave={e => e.target.style.background = 'transparent'}>
+            style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', padding: '3px' }}>
             {emoji}
           </button>
         ))}
       </div>
 
-      {/* شريط الإدخال */}
+      {/* حقل الإرسال */}
       <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, alignItems: 'center' }}>
-        
-        {/* زر إرفاق صورة */}
         <input type="file" accept="image/*" id="chatImage" style={{ display: 'none' }}
           onChange={e => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = ev => {
-              setMessages(prev => [...prev, {
-                id: Date.now(), sender: user.name,
-                text: '', image: ev.target.result,
-                time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
-              }]);
+              setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
             };
             reader.readAsDataURL(file);
           }}
         />
-        <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, flexShrink: 0 }}>
-          📎
-        </label>
+        <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>📎</label>
 
         <input value={msg} onChange={e => setMsg(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && sendMessage()}
-          placeholder="اكتب رسالة..."
+          onKeyPress={e => {
+            if (e.key === 'Enter') {
+              if (!msg.trim()) return;
+              setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: msg, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, replyTo: replyTo ? replyTo.text?.substring(0, 50) : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
+              setMsg('');
+              setReplyTo(null);
+            }
+          }}
+          placeholder={chatRoom === 'group' ? 'اكتب للمجموعة...' : `اكتب لـ ${chatRoom}...`}
           style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
 
-        <button onClick={sendMessage}
-          style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer', flexShrink: 0 }}>
-          ←
-        </button>
+        <button onClick={() => {
+          if (!msg.trim()) return;
+          setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: msg, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, replyTo: replyTo ? replyTo.text?.substring(0, 50) : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
+          setMsg('');
+          setReplyTo(null);
+        }} style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer' }}>←</button>
       </div>
     </div>
   </div>
