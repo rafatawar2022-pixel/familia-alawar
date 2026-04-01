@@ -350,49 +350,79 @@ export default function App() {
             </div>
           )}
 
-          {/* CHAT */}
-          {page === 'chat' && (
-            <div>
-              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>💬 الدردشة العائلية</h2>
-              <div style={{ ...s.card, display: 'flex', flexDirection: 'column', height: 500 }}>
-                <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {messages.map(m => (
-                    <div key={m.id} style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8 }}>
-                      <div style={{ maxWidth: '75%', background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 12, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
-                        {m.text}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ padding: 16, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 10 }}>
-                  <input value={msg} onChange={e => setMsg(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendMessage()} placeholder="اكتب رسالة..." style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
-                  <button onClick={sendMessage} style={{ background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', padding: '0 18px', fontSize: 18, cursor: 'pointer' }}>←</button>
-                </div>
-              </div>
+{/* CHAT */}
+{page === 'chat' && (
+  <div>
+    <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>💬 الدردشة العائلية</h2>
+    <div style={{ ...s.card, display: 'flex', flexDirection: 'column', height: 550 }}>
+      
+      {/* الرسائل */}
+      <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {messages.map(m => (
+          <div key={m.id} style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+              {MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}
             </div>
-          )}
+            <div style={{ maxWidth: '70%' }}>
+              <div style={{ background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
+                {m.image && <img src={m.image} alt="صورة" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
+                {m.text}
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2, textAlign: m.sender === user.name ? 'left' : 'right' }}>✅ تم الإرسال</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-          {/* MAP */}
-          {page === 'map' && (
-            <div>
-              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🗺️ خريطة العائلة</h2>
-              <div style={s.card}>
-                <div style={s.cardHeader}>
-                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>المواقع الحالية</span>
-                  <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span>
-                </div>
-                <div style={{ height: 450, background: '#2d2d2d', position: 'relative', backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
-                  {MAP_PINS.map((p, i) => (
-                    <div key={i} style={{ position: 'absolute', top: p.top, right: p.right, textAlign: 'center', transform: 'translate(50%, -50%)' }}>
-                      <div style={{ width: 48, height: 48, background: '#3d3d3d', border: `2px solid ${p.color}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto', boxShadow: `0 0 12px ${p.color}40` }}>{p.emoji}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: '2px 8px', marginTop: 4 }}>{p.name}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+      {/* شريط الإيموجي */}
+      <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {['😊','😂','❤️','👍','🎉','😢','😮','🙏','👋','🔥'].map(emoji => (
+          <button key={emoji} onClick={() => setMsg(prev => prev + emoji)}
+            style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', padding: '4px', borderRadius: 6, transition: 'background 0.2s' }}
+            onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.target.style.background = 'transparent'}>
+            {emoji}
+          </button>
+        ))}
+      </div>
+
+      {/* شريط الإدخال */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, alignItems: 'center' }}>
+        
+        {/* زر إرفاق صورة */}
+        <input type="file" accept="image/*" id="chatImage" style={{ display: 'none' }}
+          onChange={e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+              setMessages(prev => [...prev, {
+                id: Date.now(), sender: user.name,
+                text: '', image: ev.target.result,
+                time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
+              }]);
+            };
+            reader.readAsDataURL(file);
+          }}
+        />
+        <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, flexShrink: 0 }}>
+          📎
+        </label>
+
+        <input value={msg} onChange={e => setMsg(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && sendMessage()}
+          placeholder="اكتب رسالة..."
+          style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
+
+        <button onClick={sendMessage}
+          style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer', flexShrink: 0 }}>
+          ←
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
           {/* SOS */}
           {page === 'sos' && (
