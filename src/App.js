@@ -93,11 +93,11 @@ export default function App() {
     if (found) { setUser(found); setLoginError(''); }
     else setLoginError('❌ إيميل أو كلمة مرور غلط!');
   };
-
+  // eslint-disable-next-line
   const sendMessage = () => {
     if (!msg.trim()) return;
     setMessages([...messages, { id: Date.now(), sender: user.name, text: msg, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-    setMsg('');
+    setMsg(''); 
   };
 
   const addPost = () => {
