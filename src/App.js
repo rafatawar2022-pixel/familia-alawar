@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 const USERS = [
   { id: 1, name: 'رأفت', email: 'rafat@familia-alawar.com', password: 'Rafat1983', emoji: '👨', role: 'الأب' },
-  { id: 2, name: 'نور', email: 'noor@familia-alawar.com', password: 'Esposa2024', emoji: '👩', role: 'الأم' },
-  { id: 3, name: 'جود', email: 'yud@familia-alawar.com', password: 'Hijo2024', emoji: '👦', role: 'الابن' },
+  { id: 2, name: 'نور', email: 'esposa@familia-alawar.com', password: 'Esposa2024', emoji: '👩', role: 'الأم' },
+  { id: 3, name: 'جود', email: 'hijo@familia-alawar.com', password: 'Hijo2024', emoji: '👦', role: 'الابن' },
 ];
 
 const C = { bg: '#333333', header: '#c0392b', btn: '#c0392b', surface: '#3d3d3d', border: 'rgba(255,255,255,0.08)' };
@@ -48,20 +48,21 @@ const NAV = [
   { id: 'videos', label: 'الفيديو', icon: '🎥' },
   { id: 'posts', label: 'المنشورات', icon: '📝' },
   { id: 'chat', label: 'الدردشة', icon: '💬' },
+  { id: 'call', label: 'الاتصال', icon: '📞' },
   { id: 'map', label: 'الخريطة', icon: '🗺️' },
   { id: 'sos', label: 'الطوارئ', icon: '🆘' },
 ];
 
 const MEMBERS = [
   { name: 'رأفت', emoji: '👨', status: 'online', location: 'المنزل' },
-  { name: 'الأم', emoji: '👩', status: 'online', location: 'السوق' },
+  { name: 'نور', emoji: '👩', status: 'online', location: 'السوق' },
   { name: 'جود', emoji: '👦', status: 'away', location: 'المدرسة' },
   { name: 'البنت', emoji: '👧', status: 'online', location: 'المنزل' },
 ];
 
 const MAP_PINS = [
   { emoji: '👨', name: 'رأفت', top: '45%', right: '50%', color: '#2ecc71' },
-  { emoji: '👩', name: 'الأم', top: '30%', right: '25%', color: '#2ecc71' },
+  { emoji: '👩', name: 'نور', top: '30%', right: '25%', color: '#2ecc71' },
   { emoji: '👦', name: 'جود', top: '60%', right: '70%', color: '#f39c12' },
   { emoji: '👧', name: 'البنت', top: '50%', right: '45%', color: '#2ecc71' },
 ];
@@ -74,14 +75,14 @@ export default function App() {
   const [sosActive, setSosActive] = useState(false);
   const [msg, setMsg] = useState('');
   const [messages, setMessages] = useState([
-    { id: 1, sender: 'الأم', text: 'وصلت السوق 🛒', time: '10:30', room: 'group' },
+    { id: 1, sender: 'نور', text: 'وصلت السوق 🛒', time: '10:30', room: 'group' },
     { id: 2, sender: 'رأفت', text: 'تمام، خذي اللي تحتاجين ✅', time: '10:31', room: 'group' },
     { id: 3, sender: 'جود', text: 'أنا في المدرسة 📚', time: '08:00', room: 'group' },
   ]);
   const [postText, setPostText] = useState('');
   const [posts, setPosts] = useState([
     { id: 1, name: 'رأفت', emoji: '👨', text: 'أهلاً بالجميع في موقع عائلتنا! 🏠❤️', time: 'منذ ساعة' },
-    { id: 2, name: 'الأم', emoji: '👩', text: 'العشاء جاهز الساعة 7 مساءً 🍽️', time: 'منذ ساعتين' },
+    { id: 2, name: 'نور', emoji: '👩', text: 'العشاء جاهز الساعة 7 مساءً 🍽️', time: 'منذ ساعتين' },
   ]);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
@@ -162,7 +163,6 @@ export default function App() {
       : (m.room === chatRoom || m.to === chatRoom) && (m.sender === user?.name || m.to === user?.name || m.room === chatRoom)
   );
 
-  // LOGIN
   if (!user) {
     return (
       <div style={{ fontFamily: 'Tajawal, sans-serif', background: C.bg, minHeight: '100vh', color: '#fff', direction: 'rtl', display: 'flex', flexDirection: 'column' }}>
@@ -482,6 +482,49 @@ export default function App() {
                     style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
 
                   <button onClick={sendMsg} style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer' }}>←</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CALL */}
+          {page === 'call' && (
+            <div>
+              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📞 الاتصال</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+                <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
+                  <div style={{ fontSize: 60, marginBottom: 16 }}>📞</div>
+                  <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال صوتي</h3>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>اتصل بأفراد عائلتك بالصوت</p>
+                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Voice', '_blank')}
+                    style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>
+                    📞 ابدأ اتصال صوتي
+                  </button>
+                </div>
+                <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
+                  <div style={{ fontSize: 60, marginBottom: 16 }}>📹</div>
+                  <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال فيديو</h3>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>اتصل بأفراد عائلتك بالفيديو</p>
+                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Video', '_blank')}
+                    style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>
+                    📹 ابدأ اتصال فيديو
+                  </button>
+                </div>
+              </div>
+              <div style={s.card}>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📋 كيف تستخدم الاتصال؟</span></div>
+                <div style={{ padding: 20 }}>
+                  {[
+                    { step: '1', text: 'اضغط على "ابدأ اتصال" — رح يفتح نافذة جديدة' },
+                    { step: '2', text: 'اسمح للمتصفح بالوصول للكاميرا والمايكروفون' },
+                    { step: '3', text: 'أرسل رابط الغرفة لباقي أفراد العائلة عبر الدردشة' },
+                    { step: '4', text: 'الكل يدخل على نفس الرابط ويبدأ الاتصال' },
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{item.step}</div>
+                      <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{item.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
