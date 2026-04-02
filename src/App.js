@@ -54,14 +54,14 @@ const NAV = [
 
 const MEMBERS = [
   { name: 'رأفت', emoji: '👨', status: 'online', location: 'المنزل' },
-  { name: 'نور', emoji: '👩', status: 'online', location: 'السوق' },
+  { name: 'الأم', emoji: '👩', status: 'online', location: 'السوق' },
   { name: 'جود', emoji: '👦', status: 'away', location: 'المدرسة' },
   { name: 'البنت', emoji: '👧', status: 'online', location: 'المنزل' },
 ];
 
 const MAP_PINS = [
   { emoji: '👨', name: 'رأفت', top: '45%', right: '50%', color: '#2ecc71' },
-  { emoji: '👩', name: 'نور', top: '30%', right: '25%', color: '#2ecc71' },
+  { emoji: '👩', name: 'الأم', top: '30%', right: '25%', color: '#2ecc71' },
   { emoji: '👦', name: 'جود', top: '60%', right: '70%', color: '#f39c12' },
   { emoji: '👧', name: 'البنت', top: '50%', right: '45%', color: '#2ecc71' },
 ];
@@ -74,30 +74,38 @@ export default function App() {
   const [sosActive, setSosActive] = useState(false);
   const [msg, setMsg] = useState('');
   const [messages, setMessages] = useState([
-    { id: 1, sender: 'نور', text: 'وصلت السوق 🛒', time: '10:30' },
-    { id: 2, sender: 'رأفت', text: 'تمام، خذي اللي تحتاجين ✅', time: '10:31' },
-    { id: 3, sender: 'جود', text: 'أنا في المدرسة 📚', time: '08:00' },
+    { id: 1, sender: 'الأم', text: 'وصلت السوق 🛒', time: '10:30', room: 'group' },
+    { id: 2, sender: 'رأفت', text: 'تمام، خذي اللي تحتاجين ✅', time: '10:31', room: 'group' },
+    { id: 3, sender: 'جود', text: 'أنا في المدرسة 📚', time: '08:00', room: 'group' },
   ]);
   const [postText, setPostText] = useState('');
   const [posts, setPosts] = useState([
     { id: 1, name: 'رأفت', emoji: '👨', text: 'أهلاً بالجميع في موقع عائلتنا! 🏠❤️', time: 'منذ ساعة' },
-    { id: 2, name: 'نور', emoji: '👩', text: 'العشاء جاهز الساعة 7 مساءً 🍽️', time: 'منذ ساعتين' },
+    { id: 2, name: 'الأم', emoji: '👩', text: 'العشاء جاهز الساعة 7 مساءً 🍽️', time: 'منذ ساعتين' },
   ]);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
   const [chatRoom, setChatRoom] = useState('group');
   const [replyTo, setReplyTo] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
 
   const handleLogin = () => {
     const found = USERS.find(u => u.email === loginData.email && u.password === loginData.password);
     if (found) { setUser(found); setLoginError(''); }
     else setLoginError('❌ إيميل أو كلمة مرور غلط!');
   };
-  // eslint-disable-next-line
-  const sendMessage = () => {
+
+  const sendMsg = () => {
     if (!msg.trim()) return;
-    setMessages([...messages, { id: Date.now(), sender: user.name, text: msg, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-    setMsg(''); 
+    setMessages(prev => [...prev, {
+      id: Date.now(), sender: user.name, text: msg,
+      room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null,
+      replyTo: replyTo ? replyTo.text?.substring(0, 50) : null,
+      time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
+    }]);
+    setMsg('');
+    setReplyTo(null);
   };
 
   const addPost = () => {
@@ -107,23 +115,52 @@ export default function App() {
   };
 
   const handlePhotoUpload = (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach(file => {
+    Array.from(e.target.files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = ev => {
-        setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, name: file.name, uploader: user.name, time: 'الآن' }]);
-      };
+      reader.onload = ev => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن' }]);
       reader.readAsDataURL(file);
     });
   };
 
   const handleVideoUpload = (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach(file => {
-      const url = URL.createObjectURL(file);
-      setVideos(prev => [...prev, { id: Date.now() + Math.random(), src: url, name: file.name, uploader: user.name, time: 'الآن' }]);
+    Array.from(e.target.files).forEach(file => {
+      setVideos(prev => [...prev, { id: Date.now() + Math.random(), src: URL.createObjectURL(file), uploader: user.name, time: 'الآن' }]);
     });
   };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setMessages(prev => [...prev, {
+          id: Date.now(), sender: user.name, text: '', audio: url,
+          room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null,
+          time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
+        }]);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (e) {
+      alert('لا يمكن الوصول للمايكروفون');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder) { mediaRecorder.stop(); setIsRecording(false); }
+  };
+
+  const filteredMessages = messages.filter(m =>
+    chatRoom === 'group'
+      ? m.room === 'group' || !m.room
+      : (m.room === chatRoom || m.to === chatRoom) && (m.sender === user?.name || m.to === user?.name || m.room === chatRoom)
+  );
 
   // LOGIN
   if (!user) {
@@ -162,7 +199,6 @@ export default function App() {
     );
   }
 
-  // MAIN APP
   return (
     <div style={{ fontFamily: 'Tajawal, sans-serif', background: C.bg, minHeight: '100vh', color: '#fff', direction: 'rtl', display: 'flex', flexDirection: 'column' }}>
 
@@ -269,20 +305,18 @@ export default function App() {
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📸 الصور</h2>
               <div style={{ ...s.card, padding: 20, marginBottom: 20, textAlign: 'center' }}>
                 <input type="file" accept="image/*" multiple id="photoUpload" style={{ display: 'none' }} onChange={handlePhotoUpload} />
-                <label htmlFor="photoUpload" style={{ display: 'inline-block', background: '#c0392b', color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>
-                  + رفع صورة
-                </label>
+                <label htmlFor="photoUpload" style={{ display: 'inline-block', background: '#c0392b', color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>+ رفع صورة</label>
               </div>
               {photos.length === 0 ? (
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📸</div>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)' }}>لا توجد صور بعد — ارفع أول صورة!</p>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)' }}>لا توجد صور بعد!</p>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
                   {photos.map(p => (
                     <div key={p.id} style={s.card}>
-                      <img src={p.src} alt={p.name} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
+                      <img src={p.src} alt="" style={{ width: '100%', height: 180, objectFit: 'cover' }} />
                       <div style={{ padding: '10px 14px' }}>
                         <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div>
                         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{p.time}</div>
@@ -300,14 +334,12 @@ export default function App() {
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🎥 الفيديو</h2>
               <div style={{ ...s.card, padding: 20, marginBottom: 20, textAlign: 'center' }}>
                 <input type="file" accept="video/*" multiple id="videoUpload" style={{ display: 'none' }} onChange={handleVideoUpload} />
-                <label htmlFor="videoUpload" style={{ display: 'inline-block', background: '#c0392b', color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>
-                  + رفع فيديو
-                </label>
+                <label htmlFor="videoUpload" style={{ display: 'inline-block', background: '#c0392b', color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>+ رفع فيديو</label>
               </div>
               {videos.length === 0 ? (
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>🎥</div>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)' }}>لا توجد فيديوهات بعد — ارفع أول فيديو!</p>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)' }}>لا توجد فيديوهات بعد!</p>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -352,145 +384,129 @@ export default function App() {
             </div>
           )}
 
-{/* CHAT */}
-{page === 'chat' && (
-  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, height: 600 }}>
-    
-    {/* قائمة المحادثات */}
-    <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
-      <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>💬 المحادثات</span></div>
-      
-      {/* المجموعة */}
-      <div onClick={() => setChatRoom('group')}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === 'group' ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === 'group' ? '3px solid #c0392b' : '3px solid transparent' }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👨‍👩‍👧‍👦</div>
-        <div>
-          <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>المجموعة العائلية</div>
-          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>الكل</div>
-        </div>
-      </div>
-
-      {/* محادثات خاصة */}
-      {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
-        <div key={i} onClick={() => setChatRoom(m.name)}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? '3px solid #c0392b' : '3px solid transparent' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
-          <div>
-            <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div>
-            <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* نافذة الدردشة */}
-    <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
-      <div style={s.cardHeader}>
-        <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>
-          {chatRoom === 'group' ? '👨‍👩‍👧‍👦 المجموعة العائلية' : `💬 ${chatRoom}`}
-        </span>
-      </div>
-
-      {/* الرسائل */}
-      <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {messages.filter(m => chatRoom === 'group' ? m.room === 'group' || !m.room : (m.room === chatRoom && (m.sender === user.name || m.to === user.name))).map(m => (
-          <div key={m.id}>
-            {/* رد على رسالة */}
-            {replyTo && replyTo.id === m.id && (
-              <div style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: 8, padding: '4px 10px', marginBottom: 4, fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>
-                ↩️ رد على: {m.text}
+          {/* CHAT */}
+          {page === 'chat' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, height: 600 }}>
+              <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>💬 المحادثات</span></div>
+                <div onClick={() => setChatRoom('group')} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === 'group' ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === 'group' ? '3px solid #c0392b' : '3px solid transparent' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👨‍👩‍👧‍👦</div>
+                  <div>
+                    <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>المجموعة العائلية</div>
+                    <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>الكل</div>
+                  </div>
+                </div>
+                {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
+                  <div key={i} onClick={() => setChatRoom(m.name)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? '3px solid #c0392b' : '3px solid transparent' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+                    <div>
+                      <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div>
+                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-                {MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}
-              </div>
-              <div style={{ maxWidth: '70%', position: 'relative' }}>
-                {m.replyTo && (
-                  <div style={{ background: 'rgba(255,255,255,0.05)', borderRight: '2px solid #c0392b', padding: '4px 8px', borderRadius: 6, marginBottom: 4, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>
-                    ↩️ {m.replyTo}
+
+              <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
+                <div style={s.cardHeader}>
+                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{chatRoom === 'group' ? '👨‍👩‍👧‍👦 المجموعة العائلية' : `💬 ${chatRoom}`}</span>
+                </div>
+                <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {filteredMessages.map(m => (
+                    <div key={m.id}>
+                      <div style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                          {MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}
+                        </div>
+                        <div style={{ maxWidth: '70%' }}>
+                          {m.replyTo && (
+                            <div style={{ background: 'rgba(255,255,255,0.05)', borderRight: '2px solid #c0392b', padding: '4px 8px', borderRadius: 6, marginBottom: 4, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>↩️ {m.replyTo}</div>
+                          )}
+                          <div style={{ background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
+                            {m.image && <img src={m.image} alt="" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
+                            {m.audio && <audio src={m.audio} controls style={{ width: '100%', marginTop: 4 }} />}
+                            {m.text}
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, marginTop: 3, justifyContent: m.sender === user.name ? 'flex-start' : 'flex-end' }}>
+                            <button onClick={() => setReplyTo(m)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>↩️ رد</button>
+                            {m.sender === user.name && (
+                              <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>🗑️ حذف</button>
+                            )}
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', padding: '2px 6px' }}>✅</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {replyTo && (
+                  <div style={{ padding: '8px 16px', background: 'rgba(192,57,43,0.1)', borderTop: '1px solid rgba(192,57,43,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>↩️ رد على: {replyTo.text?.substring(0, 30)}</span>
+                    <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>✕</button>
                   </div>
                 )}
-                <div style={{ background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
-                  {m.image && <img src={m.image} alt="صورة" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
-                  {m.text}
+
+                <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6 }}>
+                  {['😊','😂','❤️','👍','🎉','😢','😮','🙏','👋','🔥'].map(emoji => (
+                    <button key={emoji} onClick={() => setMsg(prev => prev + emoji)} style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', padding: '3px' }}>{emoji}</button>
+                  ))}
                 </div>
-                {/* أزرار الرد والحذف */}
-                <div style={{ display: 'flex', gap: 4, marginTop: 3, justifyContent: m.sender === user.name ? 'flex-start' : 'flex-end' }}>
-                  <button onClick={() => setReplyTo(m)}
-                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>
-                    ↩️ رد
+
+                <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="file" accept="image/*" id="chatImage" style={{ display: 'none' }}
+                    onChange={e => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = ev => {
+                        setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>📎</label>
+
+                  <button
+                    onMouseDown={startRecording}
+                    onMouseUp={stopRecording}
+                    onTouchStart={startRecording}
+                    onTouchEnd={stopRecording}
+                    style={{ width: 38, height: 38, background: isRecording ? '#e74c3c' : '#444', border: 'none', borderRadius: 10, color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>
+                    🎤
                   </button>
-                  {m.sender === user.name && (
-                    <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))}
-                      style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>
-                      🗑️ حذف
-                    </button>
-                  )}
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', padding: '2px 6px' }}>✅</span>
+
+                  <input value={msg} onChange={e => setMsg(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendMsg()}
+                    placeholder={chatRoom === 'group' ? 'اكتب للمجموعة...' : `اكتب لـ ${chatRoom}...`}
+                    style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
+
+                  <button onClick={sendMsg} style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer' }}>←</button>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
 
-      {/* رد على رسالة */}
-      {replyTo && (
-        <div style={{ padding: '8px 16px', background: 'rgba(192,57,43,0.1)', borderTop: '1px solid rgba(192,57,43,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>↩️ رد على: {replyTo.text?.substring(0, 30)}...</span>
-          <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>✕</button>
-        </div>
-      )}
-
-      {/* إيموجي */}
-      <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6 }}>
-        {['😊','😂','❤️','👍','🎉','😢','😮','🙏','👋','🔥'].map(emoji => (
-          <button key={emoji} onClick={() => setMsg(prev => prev + emoji)}
-            style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', padding: '3px' }}>
-            {emoji}
-          </button>
-        ))}
-      </div>
-
-      {/* حقل الإرسال */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input type="file" accept="image/*" id="chatImage" style={{ display: 'none' }}
-          onChange={e => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-              setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-            };
-            reader.readAsDataURL(file);
-          }}
-        />
-        <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>📎</label>
-
-        <input value={msg} onChange={e => setMsg(e.target.value)}
-          onKeyPress={e => {
-            if (e.key === 'Enter') {
-              if (!msg.trim()) return;
-              setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: msg, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, replyTo: replyTo ? replyTo.text?.substring(0, 50) : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-              setMsg('');
-              setReplyTo(null);
-            }
-          }}
-          placeholder={chatRoom === 'group' ? 'اكتب للمجموعة...' : `اكتب لـ ${chatRoom}...`}
-          style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
-
-        <button onClick={() => {
-          if (!msg.trim()) return;
-          setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: msg, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, replyTo: replyTo ? replyTo.text?.substring(0, 50) : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-          setMsg('');
-          setReplyTo(null);
-        }} style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer' }}>←</button>
-      </div>
-    </div>
-  </div>
-)}
+          {/* MAP */}
+          {page === 'map' && (
+            <div>
+              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🗺️ خريطة العائلة</h2>
+              <div style={s.card}>
+                <div style={s.cardHeader}>
+                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>المواقع الحالية</span>
+                  <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span>
+                </div>
+                <div style={{ height: 450, background: '#2d2d2d', position: 'relative', backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
+                  {MAP_PINS.map((p, i) => (
+                    <div key={i} style={{ position: 'absolute', top: p.top, right: p.right, textAlign: 'center', transform: 'translate(50%, -50%)' }}>
+                      <div style={{ width: 48, height: 48, background: '#3d3d3d', border: `2px solid ${p.color}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto', boxShadow: `0 0 12px ${p.color}40` }}>{p.emoji}</div>
+                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: '2px 8px', marginTop: 4 }}>{p.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* SOS */}
           {page === 'sos' && (
