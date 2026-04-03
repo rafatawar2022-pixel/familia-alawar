@@ -327,7 +327,6 @@ export default function App() {
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
   const [themeColor, setThemeColor] = useState('#c0392b');
   const [settingsSaved, setSettingsSaved] = useState(false);
-  const [settingsNotif, setSettingsNotif] = useState({ messages: true, photos: true, birthdays: true, sos: true });
   const [settingsPrivacy, setSettingsPrivacy] = useState({ showLocation: true, showBirthday: true, showPhone: false });
   const [editProfile, setEditProfile] = useState({ name: '', phone: '', location: '' });
   const [profilePhoto, setProfilePhoto] = useState(null);
