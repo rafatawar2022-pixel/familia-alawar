@@ -60,6 +60,14 @@ function Toggle({ value, onChange }) {
   );
 }
 
+function Avatar({ photo, emoji, size = 40 }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.5, overflow: 'hidden', flexShrink: 0 }}>
+      {photo ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>{emoji}</span>}
+    </div>
+  );
+}
+
 function daysUntil(dateStr) {
   const today = new Date();
   const date = new Date(dateStr);
@@ -163,6 +171,7 @@ export default function App() {
   const [settingsNotif, setSettingsNotif] = useState({ messages: true, photos: true, birthdays: true, sos: true });
   const [settingsPrivacy, setSettingsPrivacy] = useState({ showLocation: true, showBirthday: true, showPhone: false });
   const [editProfile, setEditProfile] = useState({ name: '', phone: '', location: '' });
+  const [profilePhoto, setProfilePhoto] = useState(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const headerColor = themeColor;
@@ -198,7 +207,7 @@ export default function App() {
 
   const addPost = () => {
     if (!postText.trim()) return;
-    setPosts([{ id: Date.now(), name: user.name, emoji: user.emoji, text: postText, time: 'الآن' }, ...posts]);
+    setPosts([{ id: Date.now(), name: user.name, emoji: user.emoji, photo: profilePhoto, text: postText, time: 'الآن' }, ...posts]);
     setNotifications(prev => [{ id: Date.now(), type: 'post', icon: '📝', title: 'منشور جديد', body: `${user.name}: ${postText.substring(0, 40)}`, time: 'الآن', read: false }, ...prev]);
     setPostText('');
   };
@@ -360,11 +369,11 @@ export default function App() {
           <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16 }}>Familia Alawar</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {trackingGPS && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(46,204,113,0.2)', border: '1px solid rgba(46,204,113,0.4)', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontFamily: 'Tajawal, sans-serif', color: '#2ecc71' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ecc71' }}></div>
-            GPS
-          </div>}
-          <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, opacity: 0.9 }}>أهلاً {user.name} {user.emoji}</span>
+          {trackingGPS && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(46,204,113,0.2)', border: '1px solid rgba(46,204,113,0.4)', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontFamily: 'Tajawal, sans-serif', color: '#2ecc71' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ecc71' }}></div>GPS</div>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Avatar photo={profilePhoto} emoji={user.emoji} size={32} />
+            <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, opacity: 0.9 }}>أهلاً {user.name}</span>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={() => setShowNotifPanel(!showNotifPanel)} style={{ position: 'relative', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: 38, height: 38, borderRadius: 8, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -415,7 +424,7 @@ export default function App() {
                       <div key={i} style={{ padding: '16px 20px', borderLeft: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none', textAlign: 'center' }}>
                         <div style={{ fontSize: 32, marginBottom: 8 }}>{u.emoji}</div>
                         <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{u.name}</div>
-                        <div style={{ background: days === 0 ? headerColor : days <= 7 ? `${headerColor}30` : 'rgba(255,255,255,0.05)', borderRadius: 20, padding: '4px 12px', display: 'inline-block', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13, color: days <= 7 ? '#ff6b6b' : '#fff', marginTop: 8 }}>
+                        <div style={{ background: days === 0 ? headerColor : `${headerColor}30`, borderRadius: 20, padding: '4px 12px', display: 'inline-block', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13, color: days <= 7 ? '#ff6b6b' : '#fff', marginTop: 8 }}>
                           {days === 0 ? '🎉 اليوم!' : `${days} يوم`}
                         </div>
                       </div>
@@ -428,7 +437,10 @@ export default function App() {
                   <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>👨‍👩‍👧‍👦 أفراد العائلة</span></div>
                   {MEMBERS.map((m, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+                      <div style={{ position: 'relative' }}>
+                        <Avatar photo={m.name === user.name ? profilePhoto : null} emoji={m.emoji} size={40} />
+                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: m.status === 'online' ? '#2ecc71' : '#f39c12', border: '2px solid #3d3d3d' }}></div>
+                      </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{m.name}</div>
                         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>📍 {m.location}</div>
@@ -512,7 +524,7 @@ export default function App() {
                 <div key={i} style={{ ...s.card, marginBottom: 12 }}>
                   <div style={{ padding: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{p.emoji}</div>
+                      <Avatar photo={p.photo} emoji={p.emoji} size={40} />
                       <div><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{p.name}</div><div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{p.time}</div></div>
                     </div>
                     <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 15, lineHeight: 1.6, margin: 0 }}>{p.text}</p>
@@ -532,7 +544,10 @@ export default function App() {
                 </div>
                 {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
                   <div key={i} onClick={() => setChatRoom(m.name)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? `${headerColor}30` : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? `3px solid ${headerColor}` : '3px solid transparent' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+                    <div style={{ position: 'relative' }}>
+                      <Avatar photo={null} emoji={m.emoji} size={40} />
+                      <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: m.status === 'online' ? '#2ecc71' : '#f39c12', border: '2px solid #3d3d3d' }}></div>
+                    </div>
                     <div><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div><div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div></div>
                   </div>
                 ))}
@@ -543,7 +558,7 @@ export default function App() {
                   {filteredMessages.map(m => (
                     <div key={m.id}>
                       <div style={{ display: 'flex', flexDirection: m.sender === user.name ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}</div>
+                        <Avatar photo={m.sender === user.name ? profilePhoto : null} emoji={MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'} size={30} />
                         <div style={{ maxWidth: '70%' }}>
                           {m.replyTo && <div style={{ background: 'rgba(255,255,255,0.05)', borderRight: `2px solid ${headerColor}`, padding: '4px 8px', borderRadius: 6, marginBottom: 4, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>↩️ {m.replyTo}</div>}
                           <div style={{ background: m.sender === user.name ? `${headerColor}30` : '#444', border: `1px solid ${m.sender === user.name ? headerColor + '40' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
@@ -593,12 +608,12 @@ export default function App() {
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📞</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال صوتي</h3>
-                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Voice', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px', background: headerColor }}>📞 ابدأ اتصال صوتي</button>
+                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Voice', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px', background: headerColor }}>📞 ابدأ</button>
                 </div>
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📹</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال فيديو</h3>
-                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Video', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px', background: headerColor }}>📹 ابدأ اتصال فيديو</button>
+                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Video', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px', background: headerColor }}>📹 ابدأ</button>
                 </div>
               </div>
             </div>
@@ -608,23 +623,17 @@ export default function App() {
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🗺️ خريطة العائلة</h2>
               <div style={{ ...s.card, padding: 20, marginBottom: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <div>
                     <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>📍 موقعك الحقيقي</div>
                     <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{trackingGPS ? (myLocation ? `${myLocation[0].toFixed(5)}, ${myLocation[1].toFixed(5)} — دقة: ${gpsAccuracy}م` : 'جاري تحديد الموقع...') : 'GPS متوقف'}</div>
                   </div>
-                  {!trackingGPS ? (
-                    <button onClick={startGPS} style={{ ...s.btn, width: 'auto', padding: '10px 24px', background: '#2ecc71' }}>📍 تفعيل GPS</button>
-                  ) : (
-                    <button onClick={stopGPS} style={{ ...s.btn, width: 'auto', padding: '10px 24px', background: '#e74c3c' }}>⏹ إيقاف GPS</button>
-                  )}
+                  {!trackingGPS ? <button onClick={startGPS} style={{ ...s.btn, width: 'auto', padding: '10px 24px', background: '#2ecc71' }}>📍 تفعيل GPS</button>
+                    : <button onClick={stopGPS} style={{ ...s.btn, width: 'auto', padding: '10px 24px', background: '#e74c3c' }}>⏹ إيقاف</button>}
                 </div>
               </div>
               <div style={s.card}>
-                <div style={s.cardHeader}>
-                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>المواقع الحالية</span>
-                  <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span>
-                </div>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>المواقع الحالية</span><span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span></div>
                 <MapContainer center={mapCenter} zoom={13} style={{ height: 500, width: '100%' }}>
                   <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   {FAMILY_LOCATIONS.map((loc, i) => (<Marker key={i} position={loc.position}><Popup><div style={{ textAlign: 'center' }}><div style={{ fontSize: 24 }}>{loc.emoji}</div><div style={{ fontWeight: 700 }}>{loc.name}</div><div style={{ color: '#666', fontSize: 12 }}>📍 {loc.place}</div></div></Popup></Marker>))}
@@ -655,7 +664,7 @@ export default function App() {
                         const dateStr = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const hasEvent = monthEvents.some(e => e.date === dateStr);
                         const isToday = new Date().toDateString() === new Date(calMonth.getFullYear(), calMonth.getMonth(), day).toDateString();
-                        return (<div key={i} style={{ textAlign: 'center', padding: '6px 2px', borderRadius: 8, background: isToday ? headerColor : hasEvent ? `${headerColor}30` : 'transparent', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: isToday ? 700 : 400, color: isToday ? '#fff' : hasEvent ? '#ff6b6b' : '#fff' }}>{day}{hasEvent && !isToday && <div style={{ width: 4, height: 4, borderRadius: '50%', background: headerColor, margin: '2px auto 0' }} />}</div>);
+                        return (<div key={i} style={{ textAlign: 'center', padding: '6px 2px', borderRadius: 8, background: isToday ? headerColor : hasEvent ? `${headerColor}30` : 'transparent', fontFamily: 'Cairo, sans-serif', fontSize: 13, color: '#fff' }}>{day}{hasEvent && !isToday && <div style={{ width: 4, height: 4, borderRadius: '50%', background: headerColor, margin: '2px auto 0' }} />}</div>);
                       })}
                     </div>
                   </div>
@@ -724,7 +733,9 @@ export default function App() {
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>👤 ملفي الشخصي</h2>
               <div style={{ ...s.card, marginBottom: 20 }}>
                 <div style={{ background: headerColor, padding: '40px 24px', textAlign: 'center' }}>
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, margin: '0 auto 12px' }}>{user.emoji}</div>
+                  <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 50, margin: '0 auto 12px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.3)' }}>
+                    {profilePhoto ? <img src={profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>{user.emoji}</span>}
+                  </div>
                   <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 22, margin: '0 0 4px' }}>{user.name}</h2>
                   <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 14, opacity: 0.85, margin: 0 }}>{user.role} — Familia Alawar</p>
                 </div>
@@ -763,15 +774,29 @@ export default function App() {
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>⚙️ الإعدادات</h2>
 
-              {settingsSaved && (
-                <div style={{ background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.3)', borderRadius: 12, padding: '12px 20px', marginBottom: 20, fontFamily: 'Tajawal, sans-serif', color: '#2ecc71', fontSize: 14 }}>
-                  ✅ تم حفظ الإعدادات بنجاح!
+              {settingsSaved && <div style={{ background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.3)', borderRadius: 12, padding: '12px 20px', marginBottom: 20, fontFamily: 'Tajawal, sans-serif', color: '#2ecc71', fontSize: 14 }}>✅ تم حفظ الإعدادات!</div>}
+
+              {/* صورة الملف الشخصي */}
+              <div style={{ ...s.card, marginBottom: 20 }}>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📷 صورة الملف الشخصي</span></div>
+                <div style={{ padding: 24, textAlign: 'center' }}>
+                  <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 16px' }}>
+                    <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#444', border: `3px solid ${headerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, overflow: 'hidden' }}>
+                      {profilePhoto ? <img src={profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>{user.emoji}</span>}
+                    </div>
+                    <label htmlFor="profilePhotoUpload" style={{ position: 'absolute', bottom: 0, left: 0, width: 30, height: 30, background: headerColor, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, border: '2px solid #3d3d3d' }}>📷</label>
+                    <input type="file" accept="image/*" id="profilePhotoUpload" style={{ display: 'none' }}
+                      onChange={e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => setProfilePhoto(ev.target.result); reader.readAsDataURL(file); }}
+                    />
+                  </div>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0 }}>اضغط 📷 لرفع صورتك الشخصية</p>
+                  {profilePhoto && <button onClick={() => setProfilePhoto(null)} style={{ marginTop: 10, background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', color: '#ff6b6b', padding: '6px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 13 }}>🗑️ حذف الصورة</button>}
                 </div>
-              )}
+              </div>
 
               {/* تعديل المعلومات */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>👤 تعديل المعلومات الشخصية</span></div>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>👤 تعديل المعلومات</span></div>
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div>
                     <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6, display: 'block' }}>الاسم</label>
@@ -795,7 +820,7 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
                     {THEME_COLORS.map((c, i) => (
                       <div key={i} onClick={() => setThemeColor(c.value)} style={{ textAlign: 'center', cursor: 'pointer' }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: c.value, margin: '0 auto 6px', border: themeColor === c.value ? '3px solid #fff' : '3px solid transparent', boxShadow: themeColor === c.value ? `0 0 12px ${c.value}` : 'none', transition: 'all 0.2s' }} />
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: c.value, margin: '0 auto 6px', border: themeColor === c.value ? '3px solid #fff' : '3px solid transparent', boxShadow: themeColor === c.value ? `0 0 12px ${c.value}` : 'none' }} />
                         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{c.name}</div>
                       </div>
                     ))}
@@ -803,14 +828,14 @@ export default function App() {
                 </div>
               </div>
 
-              {/* إعدادات الإشعارات */}
+              {/* الإشعارات */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔 إعدادات الإشعارات</span></div>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔 الإشعارات</span></div>
                 <div style={{ padding: 20 }}>
                   {[
                     { key: 'messages', label: 'إشعارات الرسائل', icon: '💬' },
                     { key: 'photos', label: 'إشعارات الصور', icon: '📸' },
-                    { key: 'birthdays', label: 'إشعارات أعياد الميلاد', icon: '🎂' },
+                    { key: 'birthdays', label: 'أعياد الميلاد', icon: '🎂' },
                     { key: 'sos', label: 'إشعارات الطوارئ', icon: '🆘' },
                   ].map((item, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
@@ -824,12 +849,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* إعدادات الخصوصية */}
+              {/* الخصوصية */}
               <div style={{ ...s.card, marginBottom: 20 }}>
                 <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔒 الخصوصية</span></div>
                 <div style={{ padding: 20 }}>
                   {[
-                    { key: 'showLocation', label: 'إظهار موقعي للعائلة', icon: '📍' },
+                    { key: 'showLocation', label: 'إظهار موقعي', icon: '📍' },
                     { key: 'showBirthday', label: 'إظهار تاريخ ميلادي', icon: '🎂' },
                     { key: 'showPhone', label: 'إظهار رقم هاتفي', icon: '📱' },
                   ].map((item, i) => (
@@ -846,16 +871,16 @@ export default function App() {
 
               {/* GPS */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📍 إعدادات GPS</span></div>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📍 GPS</span></div>
                 <div style={{ padding: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>
                       <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>تتبع الموقع</div>
                       <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{trackingGPS ? '● نشط' : '● متوقف'}</div>
                     </div>
                     <Toggle value={trackingGPS} onChange={v => v ? startGPS() : stopGPS()} />
                   </div>
-                  {myLocation && <div style={{ background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: 10, padding: '10px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: '#2ecc71' }}>📍 {myLocation[0].toFixed(5)}, {myLocation[1].toFixed(5)} — دقة: {gpsAccuracy}م</div>}
+                  {myLocation && <div style={{ background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: 10, padding: '10px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: '#2ecc71' }}>📍 {myLocation[0].toFixed(5)}, {myLocation[1].toFixed(5)}</div>}
                 </div>
               </div>
 
