@@ -1,4 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 const USERS = [
   { id: 1, name: 'رأفت', email: 'rafat@familia-alawar.com', password: 'Rafat1983', emoji: '👨', role: 'الأب' },
@@ -54,17 +64,17 @@ const NAV = [
 ];
 
 const MEMBERS = [
-  { name: 'رأفت', emoji: '👨', status: 'online', location: 'المنزل' },
-  { name: 'نور', emoji: '👩', status: 'online', location: 'السوق' },
+  { name: 'رأفت', emoji: '👨', status: 'online', location: 'كوستاريكا' },
+  { name: 'نور', emoji: '👩', status: 'online', location: 'كوستاريكا' },
   { name: 'جود', emoji: '👦', status: 'away', location: 'المدرسة' },
   { name: 'البنت', emoji: '👧', status: 'online', location: 'المنزل' },
 ];
 
-const MAP_PINS = [
-  { emoji: '👨', name: 'رأفت', top: '45%', right: '50%', color: '#2ecc71' },
-  { emoji: '👩', name: 'نور', top: '30%', right: '25%', color: '#2ecc71' },
-  { emoji: '👦', name: 'جود', top: '60%', right: '70%', color: '#f39c12' },
-  { emoji: '👧', name: 'البنت', top: '50%', right: '45%', color: '#2ecc71' },
+const FAMILY_LOCATIONS = [
+  { name: 'رأفت', emoji: '👨', position: [9.9281, -84.0907], color: '#2ecc71', place: 'كوستاريكا' },
+  { name: 'نور', emoji: '👩', position: [9.9300, -84.0850], color: '#2ecc71', place: 'كوستاريكا' },
+  { name: 'جود', emoji: '👦', position: [9.9250, -84.0950], color: '#f39c12', place: 'المدرسة' },
+  { name: 'البنت', emoji: '👧', position: [9.9281, -84.0907], color: '#2ecc71', place: 'المنزل' },
 ];
 
 export default function App() {
@@ -225,7 +235,6 @@ export default function App() {
       </div>
 
       <div style={{ display: 'flex', flex: 1 }}>
-
         <div style={{ width: 200, background: '#2d2d2d', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', padding: '16px 0', flexShrink: 0 }}>
           {NAV.map(n => (
             <button key={n.id} onClick={() => { setPage(n.id); if (n.id === 'sos') setSosActive(true); }}
@@ -238,7 +247,6 @@ export default function App() {
 
         <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
 
-          {/* HOME */}
           {page === 'home' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🏠 الصفحة الرئيسية</h2>
@@ -287,19 +295,18 @@ export default function App() {
                   <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🗺️ مواقع العائلة</span>
                   <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span>
                 </div>
-                <div style={{ height: 300, background: '#2d2d2d', position: 'relative', backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
-                  {MAP_PINS.map((p, i) => (
-                    <div key={i} style={{ position: 'absolute', top: p.top, right: p.right, textAlign: 'center', transform: 'translate(50%, -50%)' }}>
-                      <div style={{ width: 44, height: 44, background: '#3d3d3d', border: `2px solid ${p.color}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, margin: '0 auto' }}>{p.emoji}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: '2px 8px', marginTop: 4 }}>{p.name}</div>
-                    </div>
+                <MapContainer center={[9.9281, -84.0907]} zoom={12} style={{ height: 300, width: '100%' }}>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  {FAMILY_LOCATIONS.map((loc, i) => (
+                    <Marker key={i} position={loc.position}>
+                      <Popup>{loc.emoji} {loc.name} — {loc.place}</Popup>
+                    </Marker>
                   ))}
-                </div>
+                </MapContainer>
               </div>
             </div>
           )}
 
-          {/* PHOTOS */}
           {page === 'photos' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📸 الصور</h2>
@@ -328,7 +335,6 @@ export default function App() {
             </div>
           )}
 
-          {/* VIDEOS */}
           {page === 'videos' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🎥 الفيديو</h2>
@@ -357,7 +363,6 @@ export default function App() {
             </div>
           )}
 
-          {/* POSTS */}
           {page === 'posts' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📝 المنشورات</h2>
@@ -384,7 +389,6 @@ export default function App() {
             </div>
           )}
 
-          {/* CHAT */}
           {page === 'chat' && (
             <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, height: 600 }}>
               <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
@@ -398,7 +402,7 @@ export default function App() {
                 </div>
                 {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
                   <div key={i} onClick={() => setChatRoom(m.name)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? '3px solid #c0392b' : '3px solid transparent' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
                     <div>
                       <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div>
                       <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
@@ -467,27 +471,17 @@ export default function App() {
                     }}
                   />
                   <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>📎</label>
-
-                  <button
-                    onMouseDown={startRecording}
-                    onMouseUp={stopRecording}
-                    onTouchStart={startRecording}
-                    onTouchEnd={stopRecording}
-                    style={{ width: 38, height: 38, background: isRecording ? '#e74c3c' : '#444', border: 'none', borderRadius: 10, color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>
-                    🎤
-                  </button>
-
+                  <button onMouseDown={startRecording} onMouseUp={stopRecording} onTouchStart={startRecording} onTouchEnd={stopRecording}
+                    style={{ width: 38, height: 38, background: isRecording ? '#e74c3c' : '#444', border: 'none', borderRadius: 10, color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>🎤</button>
                   <input value={msg} onChange={e => setMsg(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendMsg()}
                     placeholder={chatRoom === 'group' ? 'اكتب للمجموعة...' : `اكتب لـ ${chatRoom}...`}
                     style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
-
                   <button onClick={sendMsg} style={{ width: 42, height: 42, background: '#c0392b', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer' }}>←</button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* CALL */}
           {page === 'call' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📞 الاتصال</h2>
@@ -496,19 +490,13 @@ export default function App() {
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📞</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال صوتي</h3>
                   <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>اتصل بأفراد عائلتك بالصوت</p>
-                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Voice', '_blank')}
-                    style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>
-                    📞 ابدأ اتصال صوتي
-                  </button>
+                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Voice', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>📞 ابدأ اتصال صوتي</button>
                 </div>
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📹</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال فيديو</h3>
                   <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>اتصل بأفراد عائلتك بالفيديو</p>
-                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Video', '_blank')}
-                    style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>
-                    📹 ابدأ اتصال فيديو
-                  </button>
+                  <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Video', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>📹 ابدأ اتصال فيديو</button>
                 </div>
               </div>
               <div style={s.card}>
@@ -530,7 +518,6 @@ export default function App() {
             </div>
           )}
 
-          {/* MAP */}
           {page === 'map' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🗺️ خريطة العائلة</h2>
@@ -539,19 +526,27 @@ export default function App() {
                   <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>المواقع الحالية</span>
                   <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span>
                 </div>
-                <div style={{ height: 450, background: '#2d2d2d', position: 'relative', backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
-                  {MAP_PINS.map((p, i) => (
-                    <div key={i} style={{ position: 'absolute', top: p.top, right: p.right, textAlign: 'center', transform: 'translate(50%, -50%)' }}>
-                      <div style={{ width: 48, height: 48, background: '#3d3d3d', border: `2px solid ${p.color}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto', boxShadow: `0 0 12px ${p.color}40` }}>{p.emoji}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: '2px 8px', marginTop: 4 }}>{p.name}</div>
-                    </div>
+                <MapContainer center={[9.9281, -84.0907]} zoom={13} style={{ height: 500, width: '100%' }}>
+                  <TileLayer
+                    attribution='© OpenStreetMap'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {FAMILY_LOCATIONS.map((loc, i) => (
+                    <Marker key={i} position={loc.position}>
+                      <Popup>
+                        <div style={{ textAlign: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+                          <div style={{ fontSize: 24 }}>{loc.emoji}</div>
+                          <div style={{ fontWeight: 700 }}>{loc.name}</div>
+                          <div style={{ color: '#666', fontSize: 12 }}>📍 {loc.place}</div>
+                        </div>
+                      </Popup>
+                    </Marker>
                   ))}
-                </div>
+                </MapContainer>
               </div>
             </div>
           )}
 
-          {/* SOS */}
           {page === 'sos' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🆘 الطوارئ</h2>
