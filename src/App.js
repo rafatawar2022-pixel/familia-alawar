@@ -60,6 +60,7 @@ const NAV = [
   { id: 'chat', label: 'الدردشة', icon: '💬' },
   { id: 'call', label: 'الاتصال', icon: '📞' },
   { id: 'map', label: 'الخريطة', icon: '🗺️' },
+  { id: 'notifications', label: 'الإشعارات', icon: '🔔' },
   { id: 'profile', label: 'ملفي', icon: '👤' },
   { id: 'sos', label: 'الطوارئ', icon: '🆘' },
 ];
@@ -76,6 +77,14 @@ const FAMILY_LOCATIONS = [
   { name: 'نور', emoji: '👩', position: [9.9300, -84.0850], place: 'كوستاريكا' },
   { name: 'جود', emoji: '👦', position: [9.9250, -84.0950], place: 'المدرسة' },
   { name: 'البنت', emoji: '👧', position: [9.9281, -84.0907], place: 'المنزل' },
+];
+
+const INIT_NOTIFS = [
+  { id: 1, type: 'message', icon: '💬', title: 'رسالة جديدة', body: 'نور: وصلت السوق 🛒', time: 'منذ 5 دقائق', read: false },
+  { id: 2, type: 'photo', icon: '📸', title: 'صورة جديدة', body: 'جود شارك صورة جديدة', time: 'منذ ساعة', read: false },
+  { id: 3, type: 'post', icon: '📝', title: 'منشور جديد', body: 'نور نشرت منشوراً جديداً', time: 'منذ ساعتين', read: true },
+  { id: 4, type: 'birthday', icon: '🎂', title: 'عيد ميلاد قادم', body: 'عيد ميلاد رأفت بعد 5 أيام!', time: 'اليوم', read: true },
+  { id: 5, type: 'sos', icon: '🆘', title: 'تنبيه طوارئ', body: 'تم إلغاء حالة الطوارئ', time: 'أمس', read: true },
 ];
 
 export default function App() {
@@ -103,6 +112,10 @@ export default function App() {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [newPass, setNewPass] = useState({ current: '', new: '', confirm: '' });
   const [passMsg, setPassMsg] = useState('');
+  const [notifications, setNotifications] = useState(INIT_NOTIFS);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogin = () => {
     const found = USERS.find(u => u.email === loginData.email && u.password === loginData.password);
@@ -112,12 +125,18 @@ export default function App() {
 
   const sendMsg = () => {
     if (!msg.trim()) return;
-    setMessages(prev => [...prev, {
+    const newMsg = {
       id: Date.now(), sender: user.name, text: msg,
       room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null,
       replyTo: replyTo ? replyTo.text?.substring(0, 50) : null,
       time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
-    }]);
+    };
+    setMessages(prev => [...prev, newMsg]);
+    setNotifications(prev => [{
+      id: Date.now(), type: 'message', icon: '💬',
+      title: 'رسالة جديدة', body: `${user.name}: ${msg.substring(0, 40)}`,
+      time: 'الآن', read: false
+    }, ...prev]);
     setMsg('');
     setReplyTo(null);
   };
@@ -125,13 +144,25 @@ export default function App() {
   const addPost = () => {
     if (!postText.trim()) return;
     setPosts([{ id: Date.now(), name: user.name, emoji: user.emoji, text: postText, time: 'الآن' }, ...posts]);
+    setNotifications(prev => [{
+      id: Date.now(), type: 'post', icon: '📝',
+      title: 'منشور جديد', body: `${user.name}: ${postText.substring(0, 40)}`,
+      time: 'الآن', read: false
+    }, ...prev]);
     setPostText('');
   };
 
   const handlePhotoUpload = (e) => {
     Array.from(e.target.files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = ev => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن' }]);
+      reader.onload = ev => {
+        setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن' }]);
+        setNotifications(prev => [{
+          id: Date.now(), type: 'photo', icon: '📸',
+          title: 'صورة جديدة', body: `${user.name} شارك صورة جديدة`,
+          time: 'الآن', read: false
+        }, ...prev]);
+      };
       reader.readAsDataURL(file);
     });
   };
@@ -185,6 +216,8 @@ export default function App() {
     setNewPass({ current: '', new: '', confirm: '' });
   };
 
+  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+
   if (!user) {
     return (
       <div style={{ fontFamily: 'Tajawal, sans-serif', background: C.bg, minHeight: '100vh', color: '#fff', direction: 'rtl', display: 'flex', flexDirection: 'column' }}>
@@ -230,7 +263,34 @@ export default function App() {
             <div style={{ fontSize: 60 }}>🆘</div>
             <h2 style={{ fontFamily: 'Cairo, sans-serif', color: '#c0392b', fontSize: 28, margin: '16px 0' }}>حالة طوارئ!</h2>
             <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.8)', marginBottom: 24 }}>تم إرسال موقع {user.name} لجميع أفراد العائلة فوراً</p>
-            <button onClick={() => setSosActive(false)} style={{ background: '#c0392b', color: 'white', border: 'none', padding: '12px 32px', borderRadius: 12, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>إلغاء الطوارئ</button>
+            <button onClick={() => { setSosActive(false); setNotifications(prev => [{ id: Date.now(), type: 'sos', icon: '🆘', title: 'تنبيه طوارئ', body: `${user.name} فعّل زر الطوارئ!`, time: 'الآن', read: false }, ...prev]); }} style={{ background: '#c0392b', color: 'white', border: 'none', padding: '12px 32px', borderRadius: 12, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>إلغاء الطوارئ</button>
+          </div>
+        </div>
+      )}
+
+      {/* إشعار منبثق */}
+      {showNotifPanel && (
+        <div style={{ position: 'fixed', top: 70, left: 20, width: 360, background: '#2d2d2d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px', background: '#383838', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔 الإشعارات</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={markAllRead} style={{ background: 'transparent', border: 'none', color: '#c0392b', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 12 }}>قراءة الكل</button>
+              <button onClick={() => setShowNotifPanel(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+            </div>
+          </div>
+          <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+            {notifications.slice(0, 10).map(n => (
+              <div key={n.id} onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
+                style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: n.read ? 'transparent' : 'rgba(192,57,43,0.08)', cursor: 'pointer' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: n.read ? '#444' : '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{n.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 13 }}>{n.title}</div>
+                  <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{n.body}</div>
+                  <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{n.time}</div>
+                </div>
+                {!n.read && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#c0392b', flexShrink: 0, marginTop: 4 }}></div>}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -243,16 +303,28 @@ export default function App() {
           <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16 }}>Familia Alawar</span>
         </div>
         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, opacity: 0.9 }}>أهلاً {user.name} {user.emoji}</div>
-        <button onClick={() => setUser(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 700 }}>خروج 🚪</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* زر الإشعارات */}
+          <button onClick={() => setShowNotifPanel(!showNotifPanel)} style={{ position: 'relative', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: 38, height: 38, borderRadius: 8, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            🔔
+            {unreadCount > 0 && (
+              <div style={{ position: 'absolute', top: -4, right: -4, background: '#e74c3c', color: '#fff', fontSize: 10, fontWeight: 700, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #c0392b' }}>{unreadCount}</div>
+            )}
+          </button>
+          <button onClick={() => setUser(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 700 }}>خروج 🚪</button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flex: 1 }}>
         <div style={{ width: 200, background: '#2d2d2d', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', padding: '16px 0', flexShrink: 0 }}>
           {NAV.map(n => (
-            <button key={n.id} onClick={() => { setPage(n.id); if (n.id === 'sos') setSosActive(true); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 20px', background: page === n.id ? 'rgba(192,57,43,0.2)' : 'transparent', border: 'none', borderRight: page === n.id ? '3px solid #c0392b' : '3px solid transparent', color: page === n.id ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 14, fontWeight: page === n.id ? 700 : 400, textAlign: 'right', width: '100%' }}>
+            <button key={n.id} onClick={() => { setPage(n.id); setShowNotifPanel(false); if (n.id === 'sos') setSosActive(true); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 20px', background: page === n.id ? 'rgba(192,57,43,0.2)' : 'transparent', border: 'none', borderRight: page === n.id ? '3px solid #c0392b' : '3px solid transparent', color: page === n.id ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 14, fontWeight: page === n.id ? 700 : 400, textAlign: 'right', width: '100%', position: 'relative' }}>
               <span style={{ fontSize: 18 }}>{n.icon}</span>
               <span>{n.label}</span>
+              {n.id === 'notifications' && unreadCount > 0 && (
+                <span style={{ marginRight: 'auto', background: '#c0392b', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>{unreadCount}</span>
+              )}
             </button>
           ))}
         </div>
@@ -267,7 +339,7 @@ export default function App() {
                   { label: 'أفراد العائلة', value: '4', icon: '👨‍👩‍👧‍👦' },
                   { label: 'متصلون الآن', value: '3', icon: '🟢' },
                   { label: 'صور مشتركة', value: photos.length.toString(), icon: '📸' },
-                  { label: 'رسائل جديدة', value: '2', icon: '💬' },
+                  { label: 'إشعارات جديدة', value: unreadCount.toString(), icon: '🔔' },
                 ].map((stat, i) => (
                   <div key={i} style={{ ...s.card, padding: 20, textAlign: 'center' }}>
                     <div style={{ fontSize: 28, marginBottom: 8 }}>{stat.icon}</div>
@@ -291,15 +363,17 @@ export default function App() {
                   ))}
                 </div>
                 <div style={s.card}>
-                  <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>💬 آخر الرسائل</span></div>
-                  {messages.slice(-4).map(m => (
-                    <div key={m.id} style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontFamily: 'Tajawal, sans-serif', fontSize: 13 }}>
-                      <span style={{ color: '#c0392b', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{m.sender}: </span>{m.text}
+                  <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔 آخر الإشعارات</span></div>
+                  {notifications.slice(0, 4).map(n => (
+                    <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: n.read ? 'transparent' : 'rgba(192,57,43,0.05)' }}>
+                      <span style={{ fontSize: 18 }}>{n.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 13 }}>{n.title}</div>
+                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{n.time}</div>
+                      </div>
+                      {!n.read && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#c0392b' }}></div>}
                     </div>
                   ))}
-                  <div style={{ padding: 12 }}>
-                    <button onClick={() => setPage('chat')} style={{ ...s.btn, padding: '8px', fontSize: 13 }}>فتح الدردشة</button>
-                  </div>
                 </div>
               </div>
               <div style={s.card}>
@@ -422,7 +496,6 @@ export default function App() {
                   </div>
                 ))}
               </div>
-
               <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
                 <div style={s.cardHeader}>
                   <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{chatRoom === 'group' ? '👨‍👩‍👧‍👦 المجموعة العائلية' : `💬 ${chatRoom}`}</span>
@@ -435,9 +508,7 @@ export default function App() {
                           {MEMBERS.find(mb => mb.name === m.sender)?.emoji || '👤'}
                         </div>
                         <div style={{ maxWidth: '70%' }}>
-                          {m.replyTo && (
-                            <div style={{ background: 'rgba(255,255,255,0.05)', borderRight: '2px solid #c0392b', padding: '4px 8px', borderRadius: 6, marginBottom: 4, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>↩️ {m.replyTo}</div>
-                          )}
+                          {m.replyTo && <div style={{ background: 'rgba(255,255,255,0.05)', borderRight: '2px solid #c0392b', padding: '4px 8px', borderRadius: 6, marginBottom: 4, fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Tajawal, sans-serif' }}>↩️ {m.replyTo}</div>}
                           <div style={{ background: m.sender === user.name ? 'rgba(192,57,43,0.25)' : '#444', border: `1px solid ${m.sender === user.name ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: '8px 14px', fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
                             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
                             {m.image && <img src={m.image} alt="" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
@@ -446,9 +517,7 @@ export default function App() {
                           </div>
                           <div style={{ display: 'flex', gap: 4, marginTop: 3, justifyContent: m.sender === user.name ? 'flex-start' : 'flex-end' }}>
                             <button onClick={() => setReplyTo(m)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>↩️ رد</button>
-                            {m.sender === user.name && (
-                              <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>🗑️ حذف</button>
-                            )}
+                            {m.sender === user.name && <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal, sans-serif', padding: '2px 6px' }}>🗑️ حذف</button>}
                             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', padding: '2px 6px' }}>✅</span>
                           </div>
                         </div>
@@ -473,9 +542,7 @@ export default function App() {
                       const file = e.target.files[0];
                       if (!file) return;
                       const reader = new FileReader();
-                      reader.onload = ev => {
-                        setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-                      };
+                      reader.onload = ev => setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
                       reader.readAsDataURL(file);
                     }}
                   />
@@ -498,30 +565,12 @@ export default function App() {
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📞</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال صوتي</h3>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>اتصل بأفراد عائلتك بالصوت</p>
                   <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Voice', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>📞 ابدأ اتصال صوتي</button>
                 </div>
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📹</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال فيديو</h3>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>اتصل بأفراد عائلتك بالفيديو</p>
                   <button onClick={() => window.open('https://meet.jit.si/FamiliaAlawar-Video', '_blank')} style={{ ...s.btn, width: 'auto', padding: '12px 32px' }}>📹 ابدأ اتصال فيديو</button>
-                </div>
-              </div>
-              <div style={s.card}>
-                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📋 كيف تستخدم الاتصال؟</span></div>
-                <div style={{ padding: 20 }}>
-                  {[
-                    { step: '1', text: 'اضغط على "ابدأ اتصال" — رح يفتح نافذة جديدة' },
-                    { step: '2', text: 'اسمح للمتصفح بالوصول للكاميرا والمايكروفون' },
-                    { step: '3', text: 'أرسل رابط الغرفة لباقي أفراد العائلة عبر الدردشة' },
-                    { step: '4', text: 'الكل يدخل على نفس الرابط ويبدأ الاتصال' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{item.step}</div>
-                      <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{item.text}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
@@ -540,7 +589,7 @@ export default function App() {
                   {FAMILY_LOCATIONS.map((loc, i) => (
                     <Marker key={i} position={loc.position}>
                       <Popup>
-                        <div style={{ textAlign: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+                        <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 24 }}>{loc.emoji}</div>
                           <div style={{ fontWeight: 700 }}>{loc.name}</div>
                           <div style={{ color: '#666', fontSize: 12 }}>📍 {loc.place}</div>
@@ -549,6 +598,37 @@ export default function App() {
                     </Marker>
                   ))}
                 </MapContainer>
+              </div>
+            </div>
+          )}
+
+          {page === 'notifications' && (
+            <div>
+              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🔔 الإشعارات</h2>
+              <div style={{ ...s.card, marginBottom: 16 }}>
+                <div style={s.cardHeader}>
+                  <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>كل الإشعارات ({notifications.length})</span>
+                  <button onClick={markAllRead} style={{ background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', color: '#c0392b', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 13 }}>قراءة الكل ✓</button>
+                </div>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: 'center' }}>
+                    <div style={{ fontSize: 50, marginBottom: 12 }}>🔔</div>
+                    <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.5)' }}>لا توجد إشعارات</p>
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <div key={n.id} onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
+                      style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: n.read ? 'transparent' : 'rgba(192,57,43,0.06)', cursor: 'pointer' }}>
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: n.read ? '#444' : '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{n.icon}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 14, marginBottom: 3 }}>{n.title}</div>
+                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{n.body}</div>
+                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{n.time}</div>
+                      </div>
+                      {!n.read && <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#c0392b', flexShrink: 0, marginTop: 6 }}></div>}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -579,7 +659,6 @@ export default function App() {
                   ))}
                 </div>
               </div>
-
               <div style={{ ...s.card, marginBottom: 20 }}>
                 <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔑 تغيير كلمة المرور</span></div>
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -589,20 +668,6 @@ export default function App() {
                   {passMsg && <div style={{ background: passMsg.includes('✅') ? 'rgba(46,204,113,0.1)' : 'rgba(192,57,43,0.1)', border: `1px solid ${passMsg.includes('✅') ? 'rgba(46,204,113,0.3)' : 'rgba(192,57,43,0.3)'}`, borderRadius: 10, padding: '10px', color: passMsg.includes('✅') ? '#2ecc71' : '#ff6b6b', fontSize: 13, fontFamily: 'Tajawal, sans-serif' }}>{passMsg}</div>}
                   <button onClick={handleChangePass} style={{ ...s.btn, width: 'auto', padding: '10px 24px' }}>حفظ التغييرات ✓</button>
                 </div>
-              </div>
-
-              <div style={s.card}>
-                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>👨‍👩‍👧‍👦 أفراد العائلة</span></div>
-                {MEMBERS.map((m, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{m.name}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>📍 {m.location}</div>
-                    </div>
-                    <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
-                  </div>
-                ))}
               </div>
             </div>
           )}
