@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -15,7 +15,7 @@ const T = {
     home: 'الرئيسية', photos: 'الصور', videos: 'الفيديو', posts: 'المنشورات',
     chat: 'الدردشة', call: 'الاتصال', map: 'الخريطة', calendar: 'التقويم',
     notifications: 'الإشعارات', profile: 'ملفي', settings: 'الإعدادات', sos: 'الطوارئ',
-    album: 'الألبوم', music: 'الموسيقى',
+    album: 'الألبوم', music: 'الموسيقى', reels: 'ريلز',
     welcome: 'أهلاً بكم في موقع عائلة Alawar',
     subtitle: 'منصة عائلية خاصة وآمنة',
     login: 'تسجيل الدخول', loginBtn: 'دخول ←',
@@ -50,12 +50,14 @@ const T = {
     musicShare: 'مشاركة الموسيقى', addMusic: '+ إضافة موسيقى',
     name: 'الاسم', phone: 'رقم الهاتف', location: 'الموقع',
     showLocation: 'إظهار موقعي', showBirthday: 'إظهار تاريخ ميلادي', showPhone: 'إظهار رقم هاتفي',
+    like: 'إعجاب', comment: 'تعليق', likes: 'إعجاب', writeComment: 'اكتب تعليقاً...',
+    addReels: '+ رفع ريلز', noReels: 'لا توجد ريلز بعد!',
   },
   es: {
     home: 'Inicio', photos: 'Fotos', videos: 'Videos', posts: 'Publicaciones',
     chat: 'Chat', call: 'Llamada', map: 'Mapa', calendar: 'Calendario',
     notifications: 'Notificaciones', profile: 'Mi Perfil', settings: 'Ajustes', sos: 'Emergencia',
-    album: 'Álbum', music: 'Música',
+    album: 'Álbum', music: 'Música', reels: 'Reels',
     welcome: 'Bienvenidos a Familia Alawar',
     subtitle: 'Plataforma familiar privada y segura',
     login: 'Iniciar Sesión', loginBtn: 'Entrar →',
@@ -64,7 +66,7 @@ const T = {
     family: 'Miembros', online: 'En línea',
     newNotif: 'Notificaciones nuevas', sharedPhotos: 'Fotos compartidas',
     birthdays: 'Próximos cumpleaños', today: '🎉 ¡Hoy!', days: 'días',
-    upcomingEvents: 'Próximos eventos', familyLocations: 'Ubicaciones familiares',
+    upcomingEvents: 'Próximos eventos', familyLocations: 'Ubicaciones',
     connected: '● Conectado', away: '● Ausente',
     uploadPhoto: '+ Subir foto', uploadVideo: '+ Subir video',
     noPhotos: '¡No hay fotos aún!', noVideos: '¡No hay videos aún!',
@@ -72,7 +74,7 @@ const T = {
     familyGroup: 'Grupo Familiar', all: 'Todos',
     voiceCall: 'Llamada de voz', videoCall: 'Videollamada',
     startVoice: '📞 Iniciar', startVideo: '📹 Iniciar',
-    gpsReal: '📍 Tu ubicación real', gpsActive: 'GPS activo', gpsStopped: 'GPS detenido',
+    gpsReal: '📍 Tu ubicación', gpsActive: 'GPS activo', gpsStopped: 'GPS detenido',
     activateGPS: '📍 Activar GPS', stopGPS: '⏹ Detener',
     currentLocations: 'Ubicaciones actuales', live: '● En vivo',
     allNotifications: 'Todas las notificaciones', readAll: 'Leer todo ✓',
@@ -83,13 +85,15 @@ const T = {
     editInfo: 'Editar información', themeColor: 'Color del sitio',
     notifSettings: 'Notificaciones', privacy: 'Privacidad',
     saveAll: '💾 Guardar todo', saved: '✅ ¡Ajustes guardados!',
-    emergency: 'Emergencia', emergencyMsg: 'En caso de emergencia presiona el botón para enviar tu ubicación',
+    emergency: 'Emergencia', emergencyMsg: 'En emergencia presiona el botón',
     cancelSOS: 'Cancelar emergencia', emergencyAlert: '¡Emergencia!',
     sentLocation: '¡Ubicación enviada!',
     familyAlbum: 'Álbum Familiar', addPhoto: '+ Agregar foto',
     musicShare: 'Compartir música', addMusic: '+ Agregar música',
     name: 'Nombre', phone: 'Teléfono', location: 'Ubicación',
-    showLocation: 'Mostrar mi ubicación', showBirthday: 'Mostrar fecha de nacimiento', showPhone: 'Mostrar teléfono',
+    showLocation: 'Mostrar ubicación', showBirthday: 'Mostrar cumpleaños', showPhone: 'Mostrar teléfono',
+    like: 'Me gusta', comment: 'Comentar', likes: 'Me gusta', writeComment: 'Escribe un comentario...',
+    addReels: '+ Subir Reels', noReels: '¡No hay Reels aún!',
   }
 };
 
@@ -147,6 +151,89 @@ function Avatar({ photo, emoji, size = 40 }) {
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.5, overflow: 'hidden', flexShrink: 0 }}>
       {photo ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>{emoji}</span>}
+    </div>
+  );
+}
+
+function LikeComment({ item, user, color, t, onUpdate }) {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+
+  const liked = item.likes?.includes(user.name);
+
+  const toggleLike = () => {
+    const likes = item.likes || [];
+    onUpdate({ ...item, likes: liked ? likes.filter(l => l !== user.name) : [...likes, user.name] });
+  };
+
+  const addComment = () => {
+    if (!commentText.trim()) return;
+    const comments = item.comments || [];
+    onUpdate({ ...item, comments: [...comments, { id: Date.now(), author: user.name, text: commentText, time: 'الآن' }] });
+    setCommentText('');
+  };
+
+  return (
+    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '8px 14px' }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: showComments ? 10 : 0 }}>
+        <button onClick={toggleLike} style={{ background: 'transparent', border: 'none', color: liked ? color : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
+          {liked ? '❤️' : '🤍'} {item.likes?.length || 0} {t.likes}
+        </button>
+        <button onClick={() => setShowComments(!showComments)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
+          💬 {item.comments?.length || 0} {t.comment}
+        </button>
+      </div>
+      {showComments && (
+        <div>
+          {(item.comments || []).map((c, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 12, color: color }}>{c.author}:</div>
+              <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{c.text}</div>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input value={commentText} onChange={e => setCommentText(e.target.value)} onKeyPress={e => e.key === 'Enter' && addComment()} placeholder={t.writeComment} style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 13, outline: 'none' }} />
+            <button onClick={addComment} style={{ background: color, border: 'none', borderRadius: 8, color: '#fff', padding: '0 14px', cursor: 'pointer', fontSize: 16 }}>←</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReelItem({ reel, user, color, t, onUpdate }) {
+  const videoRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (playing) { videoRef.current.pause(); setPlaying(false); }
+      else { videoRef.current.play(); setPlaying(true); }
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '100%', background: '#000', borderRadius: 16, overflow: 'hidden' }}>
+      <video ref={videoRef} src={reel.src} loop style={{ width: '100%', height: '100%', objectFit: 'cover' }} onClick={togglePlay} />
+      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: 48, opacity: playing ? 0 : 0.8, transition: 'opacity 0.3s', pointerEvents: 'none' }}>▶️</div>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <Avatar photo={reel.uploaderPhoto} emoji={reel.uploaderEmoji || '👤'} size={36} />
+          <div>
+            <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14, color: '#fff' }}>{reel.uploader}</div>
+            {reel.caption && <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{reel.caption}</div>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <button onClick={() => {
+            const likes = reel.likes || [];
+            const liked = likes.includes(user.name);
+            onUpdate({ ...reel, likes: liked ? likes.filter(l => l !== user.name) : [...likes, user.name] });
+          }} style={{ background: 'transparent', border: 'none', color: reel.likes?.includes(user.name) ? color : '#fff', cursor: 'pointer', fontSize: 20 }}>
+            {reel.likes?.includes(user.name) ? '❤️' : '🤍'} {reel.likes?.length || 0}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -214,12 +301,15 @@ export default function App() {
   ]);
   const [postText, setPostText] = useState('');
   const [posts, setPosts] = useState([
-    { id: 1, name: 'رأفت', emoji: '👨', text: 'أهلاً بالجميع! 🏠❤️', time: 'منذ ساعة' },
+    { id: 1, name: 'رأفت', emoji: '👨', text: 'أهلاً بالجميع! 🏠❤️', time: 'منذ ساعة', likes: [], comments: [] },
+    { id: 2, name: 'نور', emoji: '👩', text: 'العشاء جاهز 🍽️', time: 'منذ ساعتين', likes: [], comments: [] },
   ]);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
   const [albumPhotos, setAlbumPhotos] = useState([]);
   const [musicList, setMusicList] = useState([]);
+  const [reels, setReels] = useState([]);
+  const [currentReel, setCurrentReel] = useState(0);
   const [chatRoom, setChatRoom] = useState('group');
   const [replyTo, setReplyTo] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -241,7 +331,6 @@ export default function App() {
   const [settingsPrivacy, setSettingsPrivacy] = useState({ showLocation: true, showBirthday: true, showPhone: false });
   const [editProfile, setEditProfile] = useState({ name: '', phone: '', location: '' });
   const [profilePhoto, setProfilePhoto] = useState(null);
-  
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const H = themeColor;
@@ -250,6 +339,7 @@ export default function App() {
 
   const NAV = [
     { id: 'home', label: t.home, icon: '🏠' },
+    { id: 'reels', label: t.reels, icon: '🎬' },
     { id: 'photos', label: t.photos, icon: '📸' },
     { id: 'videos', label: t.videos, icon: '🎥' },
     { id: 'album', label: t.album, icon: '🖼️' },
@@ -266,11 +356,11 @@ export default function App() {
   ];
 
   const startGPS = () => {
-    if (!navigator.geolocation) { alert('GPS not supported'); return; }
+    if (!navigator.geolocation) return;
     setTrackingGPS(true);
     navigator.geolocation.watchPosition(
       pos => { setMyLocation([pos.coords.latitude, pos.coords.longitude]); setGpsAccuracy(Math.round(pos.coords.accuracy)); },
-      () => { setTrackingGPS(false); },
+      () => setTrackingGPS(false),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
   };
@@ -290,28 +380,28 @@ export default function App() {
 
   const addPost = () => {
     if (!postText.trim()) return;
-    setPosts([{ id: Date.now(), name: user.name, emoji: user.emoji, photo: profilePhoto, text: postText, time: lang === 'ar' ? 'الآن' : 'Ahora' }, ...posts]);
+    setPosts([{ id: Date.now(), name: user.name, emoji: user.emoji, photo: profilePhoto, text: postText, time: lang === 'ar' ? 'الآن' : 'Ahora', likes: [], comments: [] }, ...posts]);
     setPostText('');
   };
 
   const handlePhotoUpload = (e) => {
     Array.from(e.target.files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = ev => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن' }]);
+      reader.onload = ev => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن', likes: [], comments: [] }]);
       reader.readAsDataURL(file);
     });
   };
 
   const handleVideoUpload = (e) => {
     Array.from(e.target.files).forEach(file => {
-      setVideos(prev => [...prev, { id: Date.now() + Math.random(), src: URL.createObjectURL(file), uploader: user.name, time: 'الآن' }]);
+      setVideos(prev => [...prev, { id: Date.now() + Math.random(), src: URL.createObjectURL(file), uploader: user.name, time: 'الآن', likes: [], comments: [] }]);
     });
   };
 
   const handleAlbumUpload = (e) => {
     Array.from(e.target.files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = ev => setAlbumPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن', caption: '' }]);
+      reader.onload = ev => setAlbumPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن', likes: [], comments: [] }]);
       reader.readAsDataURL(file);
     });
   };
@@ -319,6 +409,12 @@ export default function App() {
   const handleMusicUpload = (e) => {
     Array.from(e.target.files).forEach(file => {
       setMusicList(prev => [...prev, { id: Date.now() + Math.random(), src: URL.createObjectURL(file), name: file.name.replace(/\.[^/.]+$/, ''), uploader: user.name }]);
+    });
+  };
+
+  const handleReelsUpload = (e) => {
+    Array.from(e.target.files).forEach(file => {
+      setReels(prev => [...prev, { id: Date.now() + Math.random(), src: URL.createObjectURL(file), uploader: user.name, uploaderEmoji: user.emoji, uploaderPhoto: profilePhoto, caption: '', likes: [], comments: [] }]);
     });
   };
 
@@ -344,11 +440,11 @@ export default function App() {
   );
 
   const handleChangePass = () => {
-    if (newPass.current !== user.password) { setPassMsg('❌ Wrong password'); return; }
-    if (newPass.new !== newPass.confirm) { setPassMsg('❌ Passwords don\'t match'); return; }
-    if (newPass.new.length < 6) { setPassMsg('❌ Min 6 chars'); return; }
+    if (newPass.current !== user.password) { setPassMsg('❌'); return; }
+    if (newPass.new !== newPass.confirm) { setPassMsg('❌'); return; }
+    if (newPass.new.length < 6) { setPassMsg('❌'); return; }
     user.password = newPass.new;
-    setPassMsg('✅ ' + (lang === 'ar' ? 'تم التغيير!' : '¡Cambiado!'));
+    setPassMsg('✅');
     setNewPass({ current: '', new: '', confirm: '' });
   };
 
@@ -373,7 +469,7 @@ export default function App() {
   const monthEvents = events.filter(e => { const d = new Date(e.date); return d.getMonth() === calMonth.getMonth() && d.getFullYear() === calMonth.getFullYear(); });
   const mapCenter = myLocation || [9.9281, -84.0907];
 
-  const cardHeader = (left, right) => (
+  const CH = (left, right) => (
     <div style={s.cardHeader}>
       <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{left}</span>
       {right}
@@ -393,7 +489,7 @@ export default function App() {
           <img src="/logo.png" alt="Familia Alawar" style={{ width: 150, height: 150, borderRadius: 16, marginBottom: 20, objectFit: 'contain' }} />
           <h1 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 28, margin: '0 0 8px', textAlign: 'center' }}>{t.welcome}</h1>
           <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 40, textAlign: 'center' }}>{t.subtitle}</p>
-          <div style={{ width: '100%', maxWidth: 400, background: '#3d3d3d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, overflow: 'hidden' }}>
+          <div style={{ width: '100%', maxWidth: 400, background: '#3d3d3d', borderRadius: 20, overflow: 'hidden' }}>
             <div style={{ background: H, padding: '16px 24px', textAlign: 'center' }}>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 18, margin: 0 }}>{t.login}</h2>
             </div>
@@ -406,7 +502,7 @@ export default function App() {
                 <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 6, display: 'block' }}>{t.password}</label>
                 <input type="password" value={loginData.password} onChange={e => setLoginData({ ...loginData, password: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleLogin()} style={s.input} />
               </div>
-              {loginError && <div style={{ background: 'rgba(192,57,43,0.2)', borderRadius: 10, padding: '10px', color: '#ff6b6b', fontSize: 13, textAlign: 'center', marginBottom: 16, fontFamily: 'Tajawal, sans-serif' }}>{loginError}</div>}
+              {loginError && <div style={{ background: 'rgba(192,57,43,0.2)', borderRadius: 10, padding: '10px', color: '#ff6b6b', fontSize: 13, textAlign: 'center', marginBottom: 16 }}>{loginError}</div>}
               <button onClick={handleLogin} style={s.btn(H)}>{t.loginBtn}</button>
             </div>
           </div>
@@ -421,10 +517,10 @@ export default function App() {
 
       {sosActive && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#3d3d3d', border: `2px solid ${H}`, borderRadius: 20, padding: 40, textAlign: 'center', maxWidth: 400, boxShadow: `0 0 60px ${H}80` }}>
+          <div style={{ background: '#3d3d3d', border: `2px solid ${H}`, borderRadius: 20, padding: 40, textAlign: 'center', maxWidth: 400 }}>
             <div style={{ fontSize: 60 }}>🆘</div>
             <h2 style={{ fontFamily: 'Cairo, sans-serif', color: H, fontSize: 28, margin: '16px 0' }}>{t.emergencyAlert}</h2>
-            {myLocation && <p style={{ color: '#2ecc71', fontSize: 12, marginBottom: 8 }}>📍 {myLocation[0].toFixed(4)}, {myLocation[1].toFixed(4)}</p>}
+            {myLocation && <p style={{ color: '#2ecc71', fontSize: 12 }}>📍 {myLocation[0].toFixed(4)}, {myLocation[1].toFixed(4)}</p>}
             <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.8)', marginBottom: 24 }}>{t.sentLocation}</p>
             <button onClick={() => setSosActive(false)} style={{ background: H, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 12, fontSize: 16, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>{t.cancelSOS}</button>
           </div>
@@ -434,7 +530,7 @@ export default function App() {
       {showNotifPanel && (
         <div style={{ position: 'fixed', top: 70, left: 20, width: 360, background: '#2d2d2d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', background: '#383838', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔 {t.notifications}</span>
+            <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔</span>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))} style={{ background: 'transparent', border: 'none', color: H, cursor: 'pointer', fontSize: 12 }}>{t.readAll}</button>
               <button onClick={() => setShowNotifPanel(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 18 }}>✕</button>
@@ -464,7 +560,7 @@ export default function App() {
           <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16 }}>Familia Alawar</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {trackingGPS && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(46,204,113,0.2)', border: '1px solid rgba(46,204,113,0.4)', padding: '4px 10px', borderRadius: 20, fontSize: 12, color: '#2ecc71' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ecc71' }}></div>GPS</div>}
+          {trackingGPS && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(46,204,113,0.2)', padding: '4px 10px', borderRadius: 20, fontSize: 12, color: '#2ecc71' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ecc71' }}></div>GPS</div>}
           <Avatar photo={profilePhoto} emoji={user.emoji} size={32} />
           <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13 }}>{t.hello} {user.name}</span>
         </div>
@@ -481,10 +577,10 @@ export default function App() {
       </div>
 
       <div style={{ display: 'flex', flex: 1 }}>
-        <div style={{ width: 200, background: '#2d2d2d', borderLeft: dir === 'rtl' ? 'none' : '1px solid rgba(255,255,255,0.06)', borderRight: dir === 'ltr' ? 'none' : '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', padding: '16px 0', flexShrink: 0, overflowY: 'auto' }}>
+        <div style={{ width: 190, background: '#2d2d2d', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0, overflowY: 'auto' }}>
           {NAV.map(n => (
             <button key={n.id} onClick={() => { setPage(n.id); setShowNotifPanel(false); if (n.id === 'sos') setSosActive(true); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: page === n.id ? `${H}30` : 'transparent', border: 'none', borderRight: page === n.id ? `3px solid ${H}` : '3px solid transparent', color: page === n.id ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: page === n.id ? 700 : 400, textAlign: 'right', width: '100%' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', background: page === n.id ? `${H}30` : 'transparent', border: 'none', borderRight: page === n.id ? `3px solid ${H}` : '3px solid transparent', color: page === n.id ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: page === n.id ? 700 : 400, textAlign: 'right', width: '100%' }}>
               <span style={{ fontSize: 16 }}>{n.icon}</span>
               <span>{n.label}</span>
               {n.id === 'notifications' && unreadCount > 0 && <span style={{ marginRight: 'auto', background: H, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>{unreadCount}</span>}
@@ -513,7 +609,7 @@ export default function App() {
                 ))}
               </div>
               <div style={{ ...s.card, marginBottom: 24 }}>
-                {cardHeader('🎂 ' + t.birthdays)}
+                {CH('🎂 ' + t.birthdays)}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
                   {USERS.map((u, i) => {
                     const days = daysUntil(u.birthday);
@@ -531,7 +627,7 @@ export default function App() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
                 <div style={s.card}>
-                  {cardHeader('👨‍👩‍👧‍👦 ' + t.family)}
+                  {CH('👨‍👩‍👧‍👦 ' + t.family)}
                   {MEMBERS.map((m, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'relative' }}>
@@ -547,7 +643,7 @@ export default function App() {
                   ))}
                 </div>
                 <div style={s.card}>
-                  {cardHeader('📅 ' + t.upcomingEvents)}
+                  {CH('📅 ' + t.upcomingEvents)}
                   {sortedEvents.slice(0, 4).map((e, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: e.color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{e.emoji}</div>
@@ -561,13 +657,56 @@ export default function App() {
                 </div>
               </div>
               <div style={s.card}>
-                {cardHeader('🗺️ ' + t.familyLocations, <span style={{ fontSize: 12, color: '#2ecc71' }}>{t.live}</span>)}
+                {CH('🗺️ ' + t.familyLocations, <span style={{ fontSize: 12, color: '#2ecc71' }}>{t.live}</span>)}
                 <MapContainer center={mapCenter} zoom={12} style={{ height: 300, width: '100%' }}>
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   {FAMILY_LOCATIONS.map((loc, i) => (<Marker key={i} position={loc.position}><Popup>{loc.emoji} {loc.name}</Popup></Marker>))}
                   {myLocation && <><Marker position={myLocation} icon={gpsIcon}><Popup>📍 {user.name}</Popup></Marker><Circle center={myLocation} radius={gpsAccuracy || 50} color={H} fillColor={H} fillOpacity={0.1} /></>}
                 </MapContainer>
               </div>
+            </div>
+          )}
+
+          {/* REELS */}
+          {page === 'reels' && (
+            <div>
+              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🎬 {t.reels}</h2>
+              <div style={{ ...s.card, padding: 20, marginBottom: 20, textAlign: 'center' }}>
+                <input type="file" accept="video/*" multiple id="reelsUpload" style={{ display: 'none' }} onChange={handleReelsUpload} />
+                <label htmlFor="reelsUpload" style={{ display: 'inline-block', background: H, color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>{t.addReels}</label>
+              </div>
+              {reels.length === 0 ? (
+                <div style={{ ...s.card, padding: 60, textAlign: 'center' }}>
+                  <div style={{ fontSize: 70, marginBottom: 16 }}>🎬</div>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{t.noReels}</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 20 }}>
+                  {/* مشغل الريلز */}
+                  <div style={{ width: 360, height: 640, flexShrink: 0 }}>
+                    <ReelItem
+                      reel={reels[currentReel]}
+                      user={user}
+                      color={H}
+                      t={t}
+                      onUpdate={updated => setReels(prev => prev.map(r => r.id === updated.id ? updated : r))}
+                    />
+                  </div>
+                  {/* قائمة الريلز */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {reels.map((r, i) => (
+                      <div key={r.id} onClick={() => setCurrentReel(i)}
+                        style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: 'pointer', border: i === currentReel ? `2px solid ${H}` : '1px solid rgba(255,255,255,0.08)' }}>
+                        <video src={r.src} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />
+                        <div>
+                          <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{r.uploader}</div>
+                          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>❤️ {r.likes?.length || 0}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -580,8 +719,16 @@ export default function App() {
                 <label htmlFor="photoUpload" style={{ display: 'inline-block', background: H, color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>{t.uploadPhoto}</label>
               </div>
               {photos.length === 0 ? <div style={{ ...s.card, padding: 40, textAlign: 'center' }}><div style={{ fontSize: 60 }}>📸</div><p style={{ color: 'rgba(255,255,255,0.6)' }}>{t.noPhotos}</p></div>
-                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-                  {photos.map(p => (<div key={p.id} style={s.card}><img src={p.src} alt="" style={{ width: '100%', height: 180, objectFit: 'cover' }} /><div style={{ padding: '10px 14px' }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div></div></div>))}
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+                  {photos.map(p => (
+                    <div key={p.id} style={s.card}>
+                      <img src={p.src} alt="" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+                      <div style={{ padding: '10px 14px' }}>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div>
+                      </div>
+                      <LikeComment item={p} user={user} color={H} t={t} onUpdate={updated => setPhotos(prev => prev.map(x => x.id === updated.id ? updated : x))} />
+                    </div>
+                  ))}
                 </div>}
             </div>
           )}
@@ -596,7 +743,13 @@ export default function App() {
               </div>
               {videos.length === 0 ? <div style={{ ...s.card, padding: 40, textAlign: 'center' }}><div style={{ fontSize: 60 }}>🎥</div><p style={{ color: 'rgba(255,255,255,0.6)' }}>{t.noVideos}</p></div>
                 : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                  {videos.map(v => (<div key={v.id} style={s.card}><video src={v.src} controls style={{ width: '100%', height: 200 }} /><div style={{ padding: '10px 14px' }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{v.uploader}</div></div></div>))}
+                  {videos.map(v => (
+                    <div key={v.id} style={s.card}>
+                      <video src={v.src} controls style={{ width: '100%', height: 200 }} />
+                      <div style={{ padding: '10px 14px' }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{v.uploader}</div></div>
+                      <LikeComment item={v} user={user} color={H} t={t} onUpdate={updated => setVideos(prev => prev.map(x => x.id === updated.id ? updated : x))} />
+                    </div>
+                  ))}
                 </div>}
             </div>
           )}
@@ -612,17 +765,15 @@ export default function App() {
               {albumPhotos.length === 0 ? (
                 <div style={{ ...s.card, padding: 60, textAlign: 'center' }}>
                   <div style={{ fontSize: 70, marginBottom: 16 }}>🖼️</div>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{lang === 'ar' ? 'الألبوم فارغ — أضف أول صورة!' : '¡El álbum está vacío!'}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{lang === 'ar' ? 'الألبوم فارغ!' : '¡Álbum vacío!'}</p>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                   {albumPhotos.map(p => (
-                    <div key={p.id} style={{ ...s.card, cursor: 'pointer' }}>
+                    <div key={p.id} style={s.card}>
                       <img src={p.src} alt="" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
-                      <div style={{ padding: '12px 14px' }}>
-                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div>
-                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{p.time}</div>
-                      </div>
+                      <div style={{ padding: '10px 14px' }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div></div>
+                      <LikeComment item={p} user={user} color={H} t={t} onUpdate={updated => setAlbumPhotos(prev => prev.map(x => x.id === updated.id ? updated : x))} />
                     </div>
                   ))}
                 </div>
@@ -641,20 +792,20 @@ export default function App() {
               {musicList.length === 0 ? (
                 <div style={{ ...s.card, padding: 60, textAlign: 'center' }}>
                   <div style={{ fontSize: 70, marginBottom: 16 }}>🎵</div>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{lang === 'ar' ? 'لا توجد موسيقى بعد!' : '¡No hay música aún!'}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{lang === 'ar' ? 'لا توجد موسيقى بعد!' : '¡No hay música aún!'}</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {musicList.map((m, i) => (
+                  {musicList.map(m => (
                     <div key={m.id} style={{ ...s.card, padding: 16 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
                         <div style={{ width: 50, height: 50, borderRadius: 12, background: `${H}30`, border: `2px solid ${H}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>🎵</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{m.name}</div>
+                        <div>
+                          <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15 }}>{m.name}</div>
                           <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{m.uploader}</div>
                         </div>
                       </div>
-                      <audio src={m.src} controls style={{ width: '100%', marginTop: 12 }} />
+                      <audio src={m.src} controls style={{ width: '100%' }} />
                     </div>
                   ))}
                 </div>
@@ -681,6 +832,7 @@ export default function App() {
                     </div>
                     <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 15, lineHeight: 1.6, margin: 0 }}>{p.text}</p>
                   </div>
+                  <LikeComment item={p} user={user} color={H} t={t} onUpdate={updated => setPosts(prev => prev.map(x => x.id === updated.id ? updated : x))} />
                 </div>
               ))}
             </div>
@@ -690,10 +842,10 @@ export default function App() {
           {page === 'chat' && (
             <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, height: 600 }}>
               <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
-                {cardHeader('💬 ' + t.chat)}
+                {CH('💬 ' + t.chat)}
                 <div onClick={() => setChatRoom('group')} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === 'group' ? `${H}30` : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === 'group' ? `3px solid ${H}` : '3px solid transparent' }}>
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👨‍👩‍👧‍👦</div>
-                  <div><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{t.familyGroup}</div><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{t.all}</div></div>
+                  <div><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{t.familyGroup}</div></div>
                 </div>
                 {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
                   <div key={i} onClick={() => setChatRoom(m.name)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? `${H}30` : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? `3px solid ${H}` : '3px solid transparent' }}>
@@ -701,12 +853,12 @@ export default function App() {
                       <Avatar photo={null} emoji={m.emoji} size={40} />
                       <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: m.status === 'online' ? '#2ecc71' : '#f39c12', border: '2px solid #3d3d3d' }}></div>
                     </div>
-                    <div><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div><div style={{ fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? t.connected : t.away}</div></div>
+                    <div><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div></div>
                   </div>
                 ))}
               </div>
               <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
-                {cardHeader(chatRoom === 'group' ? '👨‍👩‍👧‍👦 ' + t.familyGroup : '💬 ' + chatRoom)}
+                {CH(chatRoom === 'group' ? '👨‍👩‍👧‍👦 ' + t.familyGroup : '💬 ' + chatRoom)}
                 <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {filteredMessages.map(m => (
                     <div key={m.id}>
@@ -747,7 +899,7 @@ export default function App() {
                   />
                   <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>📎</label>
                   <button onMouseDown={startRecording} onMouseUp={stopRecording} onTouchStart={startRecording} onTouchEnd={stopRecording} style={{ width: 38, height: 38, background: isRecording ? '#e74c3c' : '#444', border: 'none', borderRadius: 10, color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>🎤</button>
-                  <input value={msg} onChange={e => setMsg(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendMsg()} placeholder={chatRoom === 'group' ? t.familyGroup + '...' : chatRoom + '...'} style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
+                  <input value={msg} onChange={e => setMsg(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendMsg()} placeholder="..." style={{ flex: 1, background: '#444', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontFamily: 'Tajawal, sans-serif', fontSize: 14, outline: 'none' }} />
                   <button onClick={sendMsg} style={{ width: 42, height: 42, background: H, border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, cursor: 'pointer' }}>←</button>
                 </div>
               </div>
@@ -788,10 +940,10 @@ export default function App() {
                 </div>
               </div>
               <div style={s.card}>
-                {cardHeader(t.currentLocations, <span style={{ fontSize: 12, color: '#2ecc71' }}>{t.live}</span>)}
+                {CH(t.currentLocations, <span style={{ fontSize: 12, color: '#2ecc71' }}>{t.live}</span>)}
                 <MapContainer center={mapCenter} zoom={13} style={{ height: 500, width: '100%' }}>
                   <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  {FAMILY_LOCATIONS.map((loc, i) => (<Marker key={i} position={loc.position}><Popup><div style={{ textAlign: 'center' }}><div style={{ fontSize: 24 }}>{loc.emoji}</div><div style={{ fontWeight: 700 }}>{loc.name}</div></div></Popup></Marker>))}
+                  {FAMILY_LOCATIONS.map((loc, i) => (<Marker key={i} position={loc.position}><Popup>{loc.emoji} {loc.name}</Popup></Marker>))}
                   {myLocation && (<><Marker position={myLocation} icon={gpsIcon}><Popup>{user.emoji} {user.name}</Popup></Marker><Circle center={myLocation} radius={gpsAccuracy || 50} color={H} fillColor={H} fillOpacity={0.1} /></>)}
                 </MapContainer>
               </div>
@@ -826,13 +978,13 @@ export default function App() {
                   </div>
                 </div>
                 <div style={s.card}>
-                  {cardHeader('📋', <button onClick={() => setShowAddEvent(!showAddEvent)} style={{ background: H, border: 'none', color: '#fff', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 700 }}>+ {lang === 'ar' ? 'إضافة' : 'Agregar'}</button>)}
+                  {CH('📋', <button onClick={() => setShowAddEvent(!showAddEvent)} style={{ background: H, border: 'none', color: '#fff', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>+</button>)}
                   {showAddEvent && (
                     <div style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <input placeholder={lang === 'ar' ? 'اسم المناسبة...' : 'Nombre del evento...'} value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} style={{ ...s.input, fontSize: 13, padding: '10px 14px' }} />
+                        <input placeholder="..." value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} style={{ ...s.input, fontSize: 13, padding: '10px 14px' }} />
                         <input type="date" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} style={{ ...s.input, fontSize: 13, padding: '10px 14px' }} />
-                        <button onClick={addEvent} style={{ ...s.btn(H), padding: '10px', fontSize: 13 }}>{lang === 'ar' ? 'حفظ ✓' : 'Guardar ✓'}</button>
+                        <button onClick={addEvent} style={{ ...s.btn(H), padding: '10px', fontSize: 13 }}>✓</button>
                       </div>
                     </div>
                   )}
@@ -840,7 +992,7 @@ export default function App() {
                     {sortedEvents.map((e, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ width: 40, height: 40, borderRadius: 10, background: e.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{e.emoji}</div>
-                        <div style={{ flex: 1 }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{e.title}</div><div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{e.date}</div></div>
+                        <div style={{ flex: 1 }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{e.title}</div><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{e.date}</div></div>
                         <div style={{ textAlign: 'center' }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16, color: e.color }}>{daysUntil(e.date)}</div><div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{t.days}</div></div>
                       </div>
                     ))}
@@ -855,7 +1007,7 @@ export default function App() {
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🔔 {t.notifications}</h2>
               <div style={s.card}>
-                {cardHeader(`${t.allNotifications} (${notifications.length})`,
+                {CH(`${t.allNotifications} (${notifications.length})`,
                   <button onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))} style={{ background: `${H}20`, border: `1px solid ${H}40`, color: H, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>{t.readAll}</button>
                 )}
                 {notifications.map(n => (
@@ -865,7 +1017,7 @@ export default function App() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 14 }}>{n.title}</div>
                       <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{n.body}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{n.time}</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{n.time}</div>
                     </div>
                     {!n.read && <div style={{ width: 10, height: 10, borderRadius: '50%', background: H, flexShrink: 0, marginTop: 6 }}></div>}
                   </div>
@@ -904,7 +1056,7 @@ export default function App() {
                 </div>
               </div>
               <div style={s.card}>
-                {cardHeader('🔑 ' + t.changePass)}
+                {CH('🔑 ' + t.changePass)}
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <input type="password" placeholder={t.currentPass} value={newPass.current} onChange={e => setNewPass({ ...newPass, current: e.target.value })} style={s.input} />
                   <input type="password" placeholder={t.newPassLabel} value={newPass.new} onChange={e => setNewPass({ ...newPass, new: e.target.value })} style={s.input} />
@@ -922,9 +1074,8 @@ export default function App() {
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>⚙️ {t.settingsTitle}</h2>
               {settingsSaved && <div style={{ background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.3)', borderRadius: 12, padding: '12px 20px', marginBottom: 20, color: '#2ecc71', fontSize: 14 }}>{t.saved}</div>}
 
-              {/* صورة الملف */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('📷 ' + t.profilePhoto)}
+                {CH('📷 ' + t.profilePhoto)}
                 <div style={{ padding: 24, textAlign: 'center' }}>
                   <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 16px' }}>
                     <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#444', border: `3px solid ${H}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, overflow: 'hidden' }}>
@@ -939,18 +1090,16 @@ export default function App() {
                 </div>
               </div>
 
-              {/* لغة */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('🌍 ' + (lang === 'ar' ? 'اللغة' : 'Idioma'))}
+                {CH('🌍 ' + (lang === 'ar' ? 'اللغة' : 'Idioma'))}
                 <div style={{ padding: 20, display: 'flex', gap: 12 }}>
                   <button onClick={() => setLang('ar')} style={{ flex: 1, padding: '12px', borderRadius: 10, border: `2px solid ${lang === 'ar' ? H : 'rgba(255,255,255,0.1)'}`, background: lang === 'ar' ? `${H}20` : 'transparent', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15 }}>🇸🇾 عربي</button>
                   <button onClick={() => setLang('es')} style={{ flex: 1, padding: '12px', borderRadius: 10, border: `2px solid ${lang === 'es' ? H : 'rgba(255,255,255,0.1)'}`, background: lang === 'es' ? `${H}20` : 'transparent', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15 }}>🇪🇸 Español</button>
                 </div>
               </div>
 
-              {/* لون */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('🎨 ' + t.themeColor)}
+                {CH('🎨 ' + t.themeColor)}
                 <div style={{ padding: 20 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
                     {THEME_COLORS.map((c, i) => (
@@ -963,9 +1112,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* تعديل المعلومات */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('👤 ' + t.editInfo)}
+                {CH('👤 ' + t.editInfo)}
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {[
                     { key: 'name', label: t.name, placeholder: user.name },
@@ -980,30 +1128,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* الإشعارات */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('🔔 ' + t.notifSettings)}
-                <div style={{ padding: 20 }}>
-                  {[
-                    { key: 'messages', label: lang === 'ar' ? 'إشعارات الرسائل' : 'Mensajes', icon: '💬' },
-                    { key: 'photos', label: lang === 'ar' ? 'إشعارات الصور' : 'Fotos', icon: '📸' },
-                    { key: 'birthdays', label: lang === 'ar' ? 'أعياد الميلاد' : 'Cumpleaños', icon: '🎂' },
-                    { key: 'sos', label: lang === 'ar' ? 'الطوارئ' : 'Emergencias', icon: '🆘' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 20 }}>{item.icon}</span>
-                        <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>{item.label}</span>
-                      </div>
-                      <Toggle value={settingsNotif[item.key]} onChange={v => setSettingsNotif({ ...settingsNotif, [item.key]: v })} color={H} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* الخصوصية */}
-              <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('🔒 ' + t.privacy)}
+                {CH('🔒 ' + t.privacy)}
                 <div style={{ padding: 20 }}>
                   {[
                     { key: 'showLocation', label: t.showLocation, icon: '📍' },
@@ -1021,9 +1147,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* GPS */}
               <div style={{ ...s.card, marginBottom: 20 }}>
-                {cardHeader('📍 GPS')}
+                {CH('📍 GPS')}
                 <div style={{ padding: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
