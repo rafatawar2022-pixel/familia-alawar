@@ -1,3 +1,7 @@
+// eslint-disable-next-line
+import { db } from './firebase';
+// eslint-disable-next-line
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -112,20 +116,30 @@ const s = {
   cardHeader: { padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#383838' },
 };
 
-function Clock({ lang }) {
+function Clock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
-  const syria = now.toLocaleTimeString(lang === 'ar' ? 'ar-SY' : 'es', { timeZone: 'Asia/Damascus', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const cr = now.toLocaleTimeString(lang === 'ar' ? 'ar' : 'es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const date = now.toLocaleDateString(lang === 'ar' ? 'ar' : 'es', { timeZone: 'Asia/Damascus', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const syriaTime = now.toLocaleTimeString('ar-SY', { timeZone: 'Asia/Damascus', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const syriaDate = now.toLocaleDateString('ar', { timeZone: 'Asia/Damascus', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const crTime = now.toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const crDate = now.toLocaleDateString('es', { timeZone: 'America/Costa_Rica', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
   return (
-    <div style={{ background: '#2a2a2a', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '8px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
-        <span>🇸🇾</span><span style={{ color: 'rgba(255,255,255,0.6)' }}>Syria:</span><span style={{ color: '#fff', fontWeight: 600 }}>{syria}</span>
+    <div style={{ background: '#2a2a2a', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 40, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 20 }}>🇸🇾</span>
+        <div>
+          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 15, fontWeight: 700, color: '#fff' }}>{syriaTime}</div>
+          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{syriaDate}</div>
+        </div>
       </div>
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{date}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>
-        <span>🇨🇷</span><span style={{ color: 'rgba(255,255,255,0.6)' }}>Costa Rica:</span><span style={{ color: '#fff', fontWeight: 600 }}>{cr}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 20 }}>🇨🇷</span>
+        <div>
+          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 15, fontWeight: 700, color: '#fff' }}>{crTime}</div>
+          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{crDate}</div>
+        </div>
       </div>
     </div>
   );
@@ -158,7 +172,6 @@ function Avatar({ photo, emoji, size = 40 }) {
 function LikeComment({ item, user, color, t, onUpdate }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
-
   const liked = item.likes?.includes(user.name);
 
   const toggleLike = () => {
@@ -224,15 +237,13 @@ function ReelItem({ reel, user, color, t, onUpdate }) {
             {reel.caption && <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{reel.caption}</div>}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <button onClick={() => {
-            const likes = reel.likes || [];
-            const liked = likes.includes(user.name);
-            onUpdate({ ...reel, likes: liked ? likes.filter(l => l !== user.name) : [...likes, user.name] });
-          }} style={{ background: 'transparent', border: 'none', color: reel.likes?.includes(user.name) ? color : '#fff', cursor: 'pointer', fontSize: 20 }}>
-            {reel.likes?.includes(user.name) ? '❤️' : '🤍'} {reel.likes?.length || 0}
-          </button>
-        </div>
+        <button onClick={() => {
+          const likes = reel.likes || [];
+          const liked = likes.includes(user.name);
+          onUpdate({ ...reel, likes: liked ? likes.filter(l => l !== user.name) : [...likes, user.name] });
+        }} style={{ background: 'transparent', border: 'none', color: reel.likes?.includes(user.name) ? color : '#fff', cursor: 'pointer', fontSize: 20 }}>
+          {reel.likes?.includes(user.name) ? '❤️' : '🤍'} {reel.likes?.length || 0}
+        </button>
       </div>
     </div>
   );
@@ -295,14 +306,10 @@ export default function App() {
   const [page, setPage] = useState('home');
   const [sosActive, setSosActive] = useState(false);
   const [msg, setMsg] = useState('');
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'نور', text: 'وصلت السوق 🛒', time: '10:30', room: 'group' },
-    { id: 2, sender: 'رأفت', text: 'تمام ✅', time: '10:31', room: 'group' },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [postText, setPostText] = useState('');
   const [posts, setPosts] = useState([
     { id: 1, name: 'رأفت', emoji: '👨', text: 'أهلاً بالجميع! 🏠❤️', time: 'منذ ساعة', likes: [], comments: [] },
-    { id: 2, name: 'نور', emoji: '👩', text: 'العشاء جاهز 🍽️', time: 'منذ ساعتين', likes: [], comments: [] },
   ]);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
@@ -335,6 +342,15 @@ export default function App() {
   const H = themeColor;
 
   useEffect(() => { if (user) setEditProfile({ name: user.name, phone: user.phone || '', location: user.location || '' }); }, [user]);
+
+  // Firebase — تحميل الرسائل
+  useEffect(() => {
+    const q = query(collection(db, 'messages'), orderBy('createdAt'));
+    const unsub = onSnapshot(q, snap => {
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, []);
 
   const NAV = [
     { id: 'home', label: t.home, icon: '🏠' },
@@ -371,9 +387,17 @@ export default function App() {
     else setLoginError('❌ ' + (lang === 'ar' ? 'إيميل أو كلمة مرور غلط!' : 'Correo o contraseña incorrectos!'));
   };
 
-  const sendMsg = () => {
+  const sendMsg = async () => {
     if (!msg.trim()) return;
-    setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: msg, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, replyTo: replyTo ? replyTo.text?.substring(0, 50) : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
+    await addDoc(collection(db, 'messages'), {
+      sender: user.name,
+      text: msg,
+      room: chatRoom,
+      to: chatRoom !== 'group' ? chatRoom : null,
+      replyTo: replyTo ? replyTo.text?.substring(0, 50) : null,
+      time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }),
+      createdAt: serverTimestamp()
+    });
     setMsg(''); setReplyTo(null);
   };
 
@@ -423,9 +447,15 @@ export default function App() {
       const recorder = new MediaRecorder(stream);
       const chunks = [];
       recorder.ondataavailable = e => chunks.push(e.data);
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', audio: URL.createObjectURL(blob), room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
+        const url = URL.createObjectURL(blob);
+        await addDoc(collection(db, 'messages'), {
+          sender: user.name, text: '', audioUrl: url,
+          room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null,
+          time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }),
+          createdAt: serverTimestamp()
+        });
         stream.getTracks().forEach(tr => tr.stop());
       };
       recorder.start(); setMediaRecorder(recorder); setIsRecording(true);
@@ -527,7 +557,7 @@ export default function App() {
       )}
 
       {showNotifPanel && (
-        <div style={{ position: 'fixed', top: 70, left: 20, width: 360, background: '#2d2d2d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', top: 100, left: 20, width: 360, background: '#2d2d2d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', background: '#383838', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔</span>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -551,7 +581,7 @@ export default function App() {
         </div>
       )}
 
-      <Clock lang={lang} />
+      <Clock />
 
       <div style={{ background: H, padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -589,7 +619,6 @@ export default function App() {
 
         <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
 
-          {/* HOME */}
           {page === 'home' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🏠 {t.home}</h2>
@@ -666,7 +695,6 @@ export default function App() {
             </div>
           )}
 
-          {/* REELS */}
           {page === 'reels' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🎬 {t.reels}</h2>
@@ -677,29 +705,20 @@ export default function App() {
               {reels.length === 0 ? (
                 <div style={{ ...s.card, padding: 60, textAlign: 'center' }}>
                   <div style={{ fontSize: 70, marginBottom: 16 }}>🎬</div>
-                  <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{t.noReels}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{t.noReels}</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: 20 }}>
-                  {/* مشغل الريلز */}
                   <div style={{ width: 360, height: 640, flexShrink: 0 }}>
-                    <ReelItem
-                      reel={reels[currentReel]}
-                      user={user}
-                      color={H}
-                      t={t}
-                      onUpdate={updated => setReels(prev => prev.map(r => r.id === updated.id ? updated : r))}
-                    />
+                    <ReelItem reel={reels[currentReel]} user={user} color={H} t={t} onUpdate={updated => setReels(prev => prev.map(r => r.id === updated.id ? updated : r))} />
                   </div>
-                  {/* قائمة الريلز */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {reels.map((r, i) => (
-                      <div key={r.id} onClick={() => setCurrentReel(i)}
-                        style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: 'pointer', border: i === currentReel ? `2px solid ${H}` : '1px solid rgba(255,255,255,0.08)' }}>
+                      <div key={r.id} onClick={() => setCurrentReel(i)} style={{ ...s.card, display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: 'pointer', border: i === currentReel ? `2px solid ${H}` : '1px solid rgba(255,255,255,0.08)' }}>
                         <video src={r.src} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />
                         <div>
                           <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{r.uploader}</div>
-                          <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>❤️ {r.likes?.length || 0}</div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>❤️ {r.likes?.length || 0}</div>
                         </div>
                       </div>
                     ))}
@@ -709,7 +728,6 @@ export default function App() {
             </div>
           )}
 
-          {/* PHOTOS */}
           {page === 'photos' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📸 {t.photos}</h2>
@@ -722,9 +740,7 @@ export default function App() {
                   {photos.map(p => (
                     <div key={p.id} style={s.card}>
                       <img src={p.src} alt="" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
-                      <div style={{ padding: '10px 14px' }}>
-                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div>
-                      </div>
+                      <div style={{ padding: '10px 14px' }}><div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{p.uploader}</div></div>
                       <LikeComment item={p} user={user} color={H} t={t} onUpdate={updated => setPhotos(prev => prev.map(x => x.id === updated.id ? updated : x))} />
                     </div>
                   ))}
@@ -732,7 +748,6 @@ export default function App() {
             </div>
           )}
 
-          {/* VIDEOS */}
           {page === 'videos' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🎥 {t.videos}</h2>
@@ -753,7 +768,6 @@ export default function App() {
             </div>
           )}
 
-          {/* ALBUM */}
           {page === 'album' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🖼️ {t.familyAlbum}</h2>
@@ -762,10 +776,7 @@ export default function App() {
                 <label htmlFor="albumUpload" style={{ display: 'inline-block', background: H, color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>{t.addPhoto}</label>
               </div>
               {albumPhotos.length === 0 ? (
-                <div style={{ ...s.card, padding: 60, textAlign: 'center' }}>
-                  <div style={{ fontSize: 70, marginBottom: 16 }}>🖼️</div>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{lang === 'ar' ? 'الألبوم فارغ!' : '¡Álbum vacío!'}</p>
-                </div>
+                <div style={{ ...s.card, padding: 60, textAlign: 'center' }}><div style={{ fontSize: 70 }}>🖼️</div><p style={{ color: 'rgba(255,255,255,0.6)' }}>{lang === 'ar' ? 'الألبوم فارغ!' : '¡Álbum vacío!'}</p></div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                   {albumPhotos.map(p => (
@@ -780,7 +791,6 @@ export default function App() {
             </div>
           )}
 
-          {/* MUSIC */}
           {page === 'music' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🎵 {t.musicShare}</h2>
@@ -789,16 +799,13 @@ export default function App() {
                 <label htmlFor="musicUpload" style={{ display: 'inline-block', background: H, color: '#fff', padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 15, fontWeight: 700 }}>{t.addMusic}</label>
               </div>
               {musicList.length === 0 ? (
-                <div style={{ ...s.card, padding: 60, textAlign: 'center' }}>
-                  <div style={{ fontSize: 70, marginBottom: 16 }}>🎵</div>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{lang === 'ar' ? 'لا توجد موسيقى بعد!' : '¡No hay música aún!'}</p>
-                </div>
+                <div style={{ ...s.card, padding: 60, textAlign: 'center' }}><div style={{ fontSize: 70 }}>🎵</div><p style={{ color: 'rgba(255,255,255,0.6)' }}>{lang === 'ar' ? 'لا توجد موسيقى بعد!' : '¡No hay música aún!'}</p></div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {musicList.map(m => (
                     <div key={m.id} style={{ ...s.card, padding: 16 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-                        <div style={{ width: 50, height: 50, borderRadius: 12, background: `${H}30`, border: `2px solid ${H}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>🎵</div>
+                        <div style={{ width: 50, height: 50, borderRadius: 12, background: `${H}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🎵</div>
                         <div>
                           <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15 }}>{m.name}</div>
                           <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{m.uploader}</div>
@@ -812,7 +819,6 @@ export default function App() {
             </div>
           )}
 
-          {/* POSTS */}
           {page === 'posts' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📝 {t.posts}</h2>
@@ -837,7 +843,6 @@ export default function App() {
             </div>
           )}
 
-          {/* CHAT */}
           {page === 'chat' && (
             <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, height: 600 }}>
               <div style={{ ...s.card, display: 'flex', flexDirection: 'column' }}>
@@ -869,11 +874,11 @@ export default function App() {
                             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 3 }}>{m.sender} · {m.time}</div>
                             {m.image && <img src={m.image} alt="" style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 4 }} />}
                             {m.audio && <audio src={m.audio} controls style={{ width: '100%', marginTop: 4 }} />}
+                            {m.audioUrl && <audio src={m.audioUrl} controls style={{ width: '100%', marginTop: 4 }} />}
                             {m.text}
                           </div>
                           <div style={{ display: 'flex', gap: 4, marginTop: 3, justifyContent: m.sender === user.name ? 'flex-start' : 'flex-end' }}>
                             <button onClick={() => setReplyTo(m)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, padding: '2px 6px' }}>↩️</button>
-                            {m.sender === user.name && <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, padding: '2px 6px' }}>🗑️</button>}
                             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>✅</span>
                           </div>
                         </div>
@@ -894,7 +899,7 @@ export default function App() {
                 </div>
                 <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input type="file" accept="image/*" id="chatImage" style={{ display: 'none' }}
-                    onChange={e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]); reader.readAsDataURL(file); }}
+                    onChange={e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => addDoc(collection(db, 'messages'), { sender: user.name, text: '', image: ev.target.result, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }), createdAt: serverTimestamp() }); reader.readAsDataURL(file); }}
                   />
                   <label htmlFor="chatImage" style={{ width: 38, height: 38, background: '#444', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>📎</label>
                   <button onMouseDown={startRecording} onMouseUp={stopRecording} onTouchStart={startRecording} onTouchEnd={stopRecording} style={{ width: 38, height: 38, background: isRecording ? '#e74c3c' : '#444', border: 'none', borderRadius: 10, color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>🎤</button>
@@ -905,7 +910,6 @@ export default function App() {
             </div>
           )}
 
-          {/* CALL */}
           {page === 'call' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📞 {t.call}</h2>
@@ -924,7 +928,6 @@ export default function App() {
             </div>
           )}
 
-          {/* MAP */}
           {page === 'map' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🗺️ {t.map}</h2>
@@ -932,7 +935,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <div>
                     <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 15 }}>{t.gpsReal}</div>
-                    <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{trackingGPS ? (myLocation ? `${myLocation[0].toFixed(5)}, ${myLocation[1].toFixed(5)}` : '...') : t.gpsStopped}</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{trackingGPS ? (myLocation ? `${myLocation[0].toFixed(5)}, ${myLocation[1].toFixed(5)}` : '...') : t.gpsStopped}</div>
                   </div>
                   {!trackingGPS ? <button onClick={startGPS} style={{ ...s.btn('#2ecc71'), width: 'auto', padding: '10px 24px' }}>{t.activateGPS}</button>
                     : <button onClick={stopGPS} style={{ ...s.btn('#e74c3c'), width: 'auto', padding: '10px 24px' }}>{t.stopGPS}</button>}
@@ -949,7 +952,6 @@ export default function App() {
             </div>
           )}
 
-          {/* CALENDAR */}
           {page === 'calendar' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📅 {t.calendar}</h2>
@@ -1001,7 +1003,6 @@ export default function App() {
             </div>
           )}
 
-          {/* NOTIFICATIONS */}
           {page === 'notifications' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🔔 {t.notifications}</h2>
@@ -1015,7 +1016,7 @@ export default function App() {
                     <div style={{ width: 44, height: 44, borderRadius: '50%', background: n.read ? '#444' : H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{n.icon}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 14 }}>{n.title}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{n.body}</div>
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{n.body}</div>
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{n.time}</div>
                     </div>
                     {!n.read && <div style={{ width: 10, height: 10, borderRadius: '50%', background: H, flexShrink: 0, marginTop: 6 }}></div>}
@@ -1025,7 +1026,6 @@ export default function App() {
             </div>
           )}
 
-          {/* PROFILE */}
           {page === 'profile' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>👤 {t.myProfile}</h2>
@@ -1047,7 +1047,7 @@ export default function App() {
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                       <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{item.icon}</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{item.label}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{item.label}</div>
                         <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 600, fontSize: 14 }}>{item.value}</div>
                       </div>
                     </div>
@@ -1067,7 +1067,6 @@ export default function App() {
             </div>
           )}
 
-          {/* SETTINGS */}
           {page === 'settings' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>⚙️ {t.settingsTitle}</h2>
@@ -1104,7 +1103,7 @@ export default function App() {
                     {THEME_COLORS.map((c, i) => (
                       <div key={i} onClick={() => setThemeColor(c.value)} style={{ textAlign: 'center', cursor: 'pointer' }}>
                         <div style={{ width: 44, height: 44, borderRadius: '50%', background: c.value, margin: '0 auto 6px', border: themeColor === c.value ? '3px solid #fff' : '3px solid transparent', boxShadow: themeColor === c.value ? `0 0 12px ${c.value}` : 'none' }} />
-                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{c.name}</div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{c.name}</div>
                       </div>
                     ))}
                   </div>
@@ -1120,7 +1119,7 @@ export default function App() {
                     { key: 'location', label: t.location, placeholder: user.location || 'Costa Rica' },
                   ].map((item, i) => (
                     <div key={i}>
-                      <label style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6, display: 'block' }}>{item.label}</label>
+                      <label style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6, display: 'block' }}>{item.label}</label>
                       <input value={editProfile[item.key]} onChange={e => setEditProfile({ ...editProfile, [item.key]: e.target.value })} placeholder={item.placeholder} style={s.input} />
                     </div>
                   ))}
@@ -1138,7 +1137,7 @@ export default function App() {
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 20 }}>{item.icon}</span>
-                        <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 14 }}>{item.label}</span>
+                        <span style={{ fontSize: 14 }}>{item.label}</span>
                       </div>
                       <Toggle value={settingsPrivacy[item.key]} onChange={v => setSettingsPrivacy({ ...settingsPrivacy, [item.key]: v })} color={H} />
                     </div>
@@ -1152,11 +1151,11 @@ export default function App() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{lang === 'ar' ? 'تتبع الموقع' : 'Rastreo'}</div>
-                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{trackingGPS ? t.gpsActive : t.gpsStopped}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{trackingGPS ? t.gpsActive : t.gpsStopped}</div>
                     </div>
                     <Toggle value={trackingGPS} onChange={v => v ? startGPS() : stopGPS()} color={H} />
                   </div>
-                  {myLocation && <div style={{ marginTop: 12, background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: 10, padding: '10px 14px', color: '#2ecc71', fontSize: 13 }}>📍 {myLocation[0].toFixed(5)}, {myLocation[1].toFixed(5)}</div>}
+                  {myLocation && <div style={{ marginTop: 12, background: 'rgba(46,204,113,0.1)', borderRadius: 10, padding: '10px 14px', color: '#2ecc71', fontSize: 13 }}>📍 {myLocation[0].toFixed(5)}, {myLocation[1].toFixed(5)}</div>}
                 </div>
               </div>
 
@@ -1164,17 +1163,16 @@ export default function App() {
             </div>
           )}
 
-          {/* SOS */}
           {page === 'sos' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🆘 {t.emergency}</h2>
               <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
-                {myLocation && <div style={{ background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.3)', borderRadius: 10, padding: '10px 20px', marginBottom: 24, color: '#2ecc71', fontSize: 13 }}>📍 {myLocation[0].toFixed(5)}, {myLocation[1].toFixed(5)}</div>}
-                <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.7)', marginBottom: 32, fontSize: 15 }}>{t.emergencyMsg}</p>
+                {myLocation && <div style={{ background: 'rgba(46,204,113,0.1)', borderRadius: 10, padding: '10px 20px', marginBottom: 24, color: '#2ecc71', fontSize: 13 }}>📍 {myLocation[0].toFixed(5)}, {myLocation[1].toFixed(5)}</div>}
+                <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 32, fontSize: 15 }}>{t.emergencyMsg}</p>
                 <button onClick={() => { if (!trackingGPS) startGPS(); setSosActive(true); }} style={{ width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, #e74c3c, #c0392b)', border: '4px solid rgba(192,57,43,0.4)', color: 'white', fontSize: 32, fontWeight: 900, cursor: 'pointer', boxShadow: '0 0 40px rgba(192,57,43,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontFamily: 'Cairo, sans-serif' }}>
                   <span>SOS</span>
                 </button>
-                <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 24 }}>⚠️</p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 24 }}>⚠️</p>
               </div>
             </div>
           )}
