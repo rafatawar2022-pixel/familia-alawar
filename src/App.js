@@ -241,7 +241,7 @@ export default function App() {
   const [settingsPrivacy, setSettingsPrivacy] = useState({ showLocation: true, showBirthday: true, showPhone: false });
   const [editProfile, setEditProfile] = useState({ name: '', phone: '', location: '' });
   const [profilePhoto, setProfilePhoto] = useState(null);
-  const [currentMusic, setCurrentMusic] = useState(null);
+  
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const H = themeColor;
