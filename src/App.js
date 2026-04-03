@@ -52,6 +52,14 @@ function Footer() {
   );
 }
 
+function daysUntil(dateStr) {
+  const today = new Date();
+  const date = new Date(dateStr);
+  const next = new Date(today.getFullYear(), date.getMonth(), date.getDate());
+  if (next < today) next.setFullYear(today.getFullYear() + 1);
+  return Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+}
+
 const NAV = [
   { id: 'home', label: 'الرئيسية', icon: '🏠' },
   { id: 'photos', label: 'الصور', icon: '📸' },
@@ -60,6 +68,7 @@ const NAV = [
   { id: 'chat', label: 'الدردشة', icon: '💬' },
   { id: 'call', label: 'الاتصال', icon: '📞' },
   { id: 'map', label: 'الخريطة', icon: '🗺️' },
+  { id: 'calendar', label: 'التقويم', icon: '📅' },
   { id: 'notifications', label: 'الإشعارات', icon: '🔔' },
   { id: 'profile', label: 'ملفي', icon: '👤' },
   { id: 'sos', label: 'الطوارئ', icon: '🆘' },
@@ -81,10 +90,16 @@ const FAMILY_LOCATIONS = [
 
 const INIT_NOTIFS = [
   { id: 1, type: 'message', icon: '💬', title: 'رسالة جديدة', body: 'نور: وصلت السوق 🛒', time: 'منذ 5 دقائق', read: false },
-  { id: 2, type: 'photo', icon: '📸', title: 'صورة جديدة', body: 'جود شارك صورة جديدة', time: 'منذ ساعة', read: false },
+  { id: 2, type: 'birthday', icon: '🎂', title: 'عيد ميلاد قادم', body: 'عيد ميلاد رأفت بعد 5 أيام!', time: 'اليوم', read: false },
   { id: 3, type: 'post', icon: '📝', title: 'منشور جديد', body: 'نور نشرت منشوراً جديداً', time: 'منذ ساعتين', read: true },
-  { id: 4, type: 'birthday', icon: '🎂', title: 'عيد ميلاد قادم', body: 'عيد ميلاد رأفت بعد 5 أيام!', time: 'اليوم', read: true },
-  { id: 5, type: 'sos', icon: '🆘', title: 'تنبيه طوارئ', body: 'تم إلغاء حالة الطوارئ', time: 'أمس', read: true },
+];
+
+const INIT_EVENTS = [
+  { id: 1, title: 'عيد ميلاد رأفت 🎂', date: '2026-01-01', type: 'birthday', emoji: '🎂', color: '#e74c3c' },
+  { id: 2, title: 'عيد ميلاد نور 🎂', date: '2026-05-15', type: 'birthday', emoji: '🎂', color: '#e74c3c' },
+  { id: 3, title: 'عيد ميلاد جود 🎂', date: '2026-03-20', type: 'birthday', emoji: '🎂', color: '#e74c3c' },
+  { id: 4, title: 'ذكرى الزواج 💍', date: '2026-06-10', type: 'anniversary', emoji: '💍', color: '#9b59b6' },
+  { id: 5, title: 'رحلة عائلية 🏖️', date: '2026-07-15', type: 'trip', emoji: '🏖️', color: '#2ecc71' },
 ];
 
 export default function App() {
@@ -114,6 +129,10 @@ export default function App() {
   const [passMsg, setPassMsg] = useState('');
   const [notifications, setNotifications] = useState(INIT_NOTIFS);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [events, setEvents] = useState(INIT_EVENTS);
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', type: 'event', emoji: '📅' });
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [calMonth, setCalMonth] = useState(new Date());
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -125,18 +144,13 @@ export default function App() {
 
   const sendMsg = () => {
     if (!msg.trim()) return;
-    const newMsg = {
+    setMessages(prev => [...prev, {
       id: Date.now(), sender: user.name, text: msg,
       room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null,
       replyTo: replyTo ? replyTo.text?.substring(0, 50) : null,
       time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages(prev => [...prev, newMsg]);
-    setNotifications(prev => [{
-      id: Date.now(), type: 'message', icon: '💬',
-      title: 'رسالة جديدة', body: `${user.name}: ${msg.substring(0, 40)}`,
-      time: 'الآن', read: false
-    }, ...prev]);
+    }]);
+    setNotifications(prev => [{ id: Date.now(), type: 'message', icon: '💬', title: 'رسالة جديدة', body: `${user.name}: ${msg.substring(0, 40)}`, time: 'الآن', read: false }, ...prev]);
     setMsg('');
     setReplyTo(null);
   };
@@ -144,11 +158,7 @@ export default function App() {
   const addPost = () => {
     if (!postText.trim()) return;
     setPosts([{ id: Date.now(), name: user.name, emoji: user.emoji, text: postText, time: 'الآن' }, ...posts]);
-    setNotifications(prev => [{
-      id: Date.now(), type: 'post', icon: '📝',
-      title: 'منشور جديد', body: `${user.name}: ${postText.substring(0, 40)}`,
-      time: 'الآن', read: false
-    }, ...prev]);
+    setNotifications(prev => [{ id: Date.now(), type: 'post', icon: '📝', title: 'منشور جديد', body: `${user.name}: ${postText.substring(0, 40)}`, time: 'الآن', read: false }, ...prev]);
     setPostText('');
   };
 
@@ -157,11 +167,7 @@ export default function App() {
       const reader = new FileReader();
       reader.onload = ev => {
         setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: ev.target.result, uploader: user.name, time: 'الآن' }]);
-        setNotifications(prev => [{
-          id: Date.now(), type: 'photo', icon: '📸',
-          title: 'صورة جديدة', body: `${user.name} شارك صورة جديدة`,
-          time: 'الآن', read: false
-        }, ...prev]);
+        setNotifications(prev => [{ id: Date.now(), type: 'photo', icon: '📸', title: 'صورة جديدة', body: `${user.name} شارك صورة جديدة`, time: 'الآن', read: false }, ...prev]);
       };
       reader.readAsDataURL(file);
     });
@@ -182,28 +188,19 @@ export default function App() {
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         const url = URL.createObjectURL(blob);
-        setMessages(prev => [...prev, {
-          id: Date.now(), sender: user.name, text: '', audio: url,
-          room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null,
-          time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
-        }]);
+        setMessages(prev => [...prev, { id: Date.now(), sender: user.name, text: '', audio: url, room: chatRoom, to: chatRoom !== 'group' ? chatRoom : null, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
         stream.getTracks().forEach(t => t.stop());
       };
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
-    } catch (e) {
-      alert('لا يمكن الوصول للمايكروفون');
-    }
+    } catch (e) { alert('لا يمكن الوصول للمايكروفون'); }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorder) { mediaRecorder.stop(); setIsRecording(false); }
-  };
+  const stopRecording = () => { if (mediaRecorder) { mediaRecorder.stop(); setIsRecording(false); } };
 
   const filteredMessages = messages.filter(m =>
-    chatRoom === 'group'
-      ? m.room === 'group' || !m.room
+    chatRoom === 'group' ? m.room === 'group' || !m.room
       : (m.room === chatRoom || m.to === chatRoom) && (m.sender === user?.name || m.to === user?.name || m.room === chatRoom)
   );
 
@@ -217,6 +214,24 @@ export default function App() {
   };
 
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+
+  const addEvent = () => {
+    if (!newEvent.title || !newEvent.date) return;
+    const colors = { birthday: '#e74c3c', anniversary: '#9b59b6', trip: '#2ecc71', event: '#3498db', other: '#f39c12' };
+    setEvents(prev => [...prev, { id: Date.now(), ...newEvent, color: colors[newEvent.type] || '#3498db' }]);
+    setNotifications(prev => [{ id: Date.now(), type: 'calendar', icon: '📅', title: 'مناسبة جديدة', body: `${newEvent.title} — ${newEvent.date}`, time: 'الآن', read: false }, ...prev]);
+    setNewEvent({ title: '', date: '', type: 'event', emoji: '📅' });
+    setShowAddEvent(false);
+  };
+
+  const sortedEvents = [...events].sort((a, b) => daysUntil(a.date) - daysUntil(b.date));
+
+  const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const getFirstDay = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  const monthEvents = events.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === calMonth.getMonth() && d.getFullYear() === calMonth.getFullYear();
+  });
 
   if (!user) {
     return (
@@ -268,7 +283,6 @@ export default function App() {
         </div>
       )}
 
-      {/* إشعار منبثق */}
       {showNotifPanel && (
         <div style={{ position: 'fixed', top: 70, left: 20, width: 360, background: '#2d2d2d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', background: '#383838', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -304,12 +318,9 @@ export default function App() {
         </div>
         <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, opacity: 0.9 }}>أهلاً {user.name} {user.emoji}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* زر الإشعارات */}
           <button onClick={() => setShowNotifPanel(!showNotifPanel)} style={{ position: 'relative', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: 38, height: 38, borderRadius: 8, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             🔔
-            {unreadCount > 0 && (
-              <div style={{ position: 'absolute', top: -4, right: -4, background: '#e74c3c', color: '#fff', fontSize: 10, fontWeight: 700, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #c0392b' }}>{unreadCount}</div>
-            )}
+            {unreadCount > 0 && <div style={{ position: 'absolute', top: -4, right: -4, background: '#e74c3c', color: '#fff', fontSize: 10, fontWeight: 700, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #c0392b' }}>{unreadCount}</div>}
           </button>
           <button onClick={() => setUser(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 700 }}>خروج 🚪</button>
         </div>
@@ -322,9 +333,7 @@ export default function App() {
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 20px', background: page === n.id ? 'rgba(192,57,43,0.2)' : 'transparent', border: 'none', borderRight: page === n.id ? '3px solid #c0392b' : '3px solid transparent', color: page === n.id ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 14, fontWeight: page === n.id ? 700 : 400, textAlign: 'right', width: '100%', position: 'relative' }}>
               <span style={{ fontSize: 18 }}>{n.icon}</span>
               <span>{n.label}</span>
-              {n.id === 'notifications' && unreadCount > 0 && (
-                <span style={{ marginRight: 'auto', background: '#c0392b', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>{unreadCount}</span>
-              )}
+              {n.id === 'notifications' && unreadCount > 0 && <span style={{ marginRight: 'auto', background: '#c0392b', color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>{unreadCount}</span>}
             </button>
           ))}
         </div>
@@ -348,6 +357,27 @@ export default function App() {
                   </div>
                 ))}
               </div>
+
+              {/* أعياد الميلاد القادمة */}
+              <div style={{ ...s.card, marginBottom: 24 }}>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🎂 أعياد الميلاد القادمة</span></div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>
+                  {USERS.map((u, i) => {
+                    const days = daysUntil(u.birthday);
+                    return (
+                      <div key={i} style={{ padding: '16px 20px', borderLeft: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none', textAlign: 'center' }}>
+                        <div style={{ fontSize: 32, marginBottom: 8 }}>{u.emoji}</div>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{u.name}</div>
+                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>{u.birthday}</div>
+                        <div style={{ background: days === 0 ? '#c0392b' : days <= 7 ? 'rgba(192,57,43,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${days <= 7 ? 'rgba(192,57,43,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: '4px 12px', display: 'inline-block', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13, color: days <= 7 ? '#ff6b6b' : '#fff' }}>
+                          {days === 0 ? '🎉 اليوم!' : `${days} يوم`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
                 <div style={s.card}>
                   <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>👨‍👩‍👧‍👦 أفراد العائلة</span></div>
@@ -363,19 +393,20 @@ export default function App() {
                   ))}
                 </div>
                 <div style={s.card}>
-                  <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔔 آخر الإشعارات</span></div>
-                  {notifications.slice(0, 4).map(n => (
-                    <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: n.read ? 'transparent' : 'rgba(192,57,43,0.05)' }}>
-                      <span style={{ fontSize: 18 }}>{n.icon}</span>
+                  <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📅 المناسبات القادمة</span></div>
+                  {sortedEvents.slice(0, 4).map((e, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: e.color + '30', border: `1px solid ${e.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{e.emoji}</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 13 }}>{n.title}</div>
-                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{n.time}</div>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{e.title}</div>
+                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{e.date}</div>
                       </div>
-                      {!n.read && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#c0392b' }}></div>}
+                      <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 12, color: e.color }}>{daysUntil(e.date)} يوم</div>
                     </div>
                   ))}
                 </div>
               </div>
+
               <div style={s.card}>
                 <div style={s.cardHeader}>
                   <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🗺️ مواقع العائلة</span>
@@ -561,7 +592,7 @@ export default function App() {
           {page === 'call' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📞 الاتصال</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <div style={{ ...s.card, padding: 40, textAlign: 'center' }}>
                   <div style={{ fontSize: 60, marginBottom: 16 }}>📞</div>
                   <h3 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 12 }}>اتصال صوتي</h3>
@@ -602,33 +633,125 @@ export default function App() {
             </div>
           )}
 
+          {page === 'calendar' && (
+            <div>
+              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>📅 التقويم العائلي</h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+                {/* التقويم */}
+                <div style={s.card}>
+                  <div style={s.cardHeader}>
+                    <button onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1))} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 18 }}>›</button>
+                    <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>
+                      {calMonth.toLocaleDateString('ar', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1))} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 18 }}>‹</button>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
+                      {['أح','إث','ث','أر','خ','ج','س'].map((d, i) => (
+                        <div key={i} style={{ textAlign: 'center', fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 12, color: 'rgba(255,255,255,0.5)', padding: '4px 0' }}>{d}</div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                      {Array.from({ length: getFirstDay(calMonth) }).map((_, i) => <div key={i} />)}
+                      {Array.from({ length: getDaysInMonth(calMonth) }).map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const hasEvent = monthEvents.some(e => e.date === dateStr);
+                        const isToday = new Date().toDateString() === new Date(dateStr).toDateString();
+                        return (
+                          <div key={i} style={{ textAlign: 'center', padding: '6px 2px', borderRadius: 8, background: isToday ? '#c0392b' : hasEvent ? 'rgba(192,57,43,0.2)' : 'transparent', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: isToday ? 700 : 400, color: isToday ? '#fff' : hasEvent ? '#ff6b6b' : '#fff', cursor: hasEvent ? 'pointer' : 'default', position: 'relative' }}>
+                            {day}
+                            {hasEvent && !isToday && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#c0392b', margin: '2px auto 0' }} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {monthEvents.length > 0 && (
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: 16 }}>
+                      <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 10, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>مناسبات هذا الشهر:</div>
+                      {monthEvents.map((e, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < monthEvents.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                          <span style={{ fontSize: 16 }}>{e.emoji}</span>
+                          <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, flex: 1 }}>{e.title}</span>
+                          <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{e.date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* قائمة المناسبات */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={s.card}>
+                    <div style={s.cardHeader}>
+                      <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>📋 كل المناسبات</span>
+                      <button onClick={() => setShowAddEvent(!showAddEvent)} style={{ background: '#c0392b', border: 'none', color: '#fff', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: 13, fontWeight: 700 }}>+ إضافة</button>
+                    </div>
+
+                    {showAddEvent && (
+                      <div style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(192,57,43,0.05)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <input placeholder="اسم المناسبة..." value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} style={{ ...s.input, fontSize: 13, padding: '10px 14px' }} />
+                          <input type="date" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} style={{ ...s.input, fontSize: 13, padding: '10px 14px' }} />
+                          <select value={newEvent.type} onChange={e => {
+                            const emojis = { birthday: '🎂', anniversary: '💍', trip: '🏖️', event: '📅', other: '⭐' };
+                            setNewEvent({ ...newEvent, type: e.target.value, emoji: emojis[e.target.value] });
+                          }} style={{ ...s.input, fontSize: 13, padding: '10px 14px' }}>
+                            <option value="birthday">🎂 عيد ميلاد</option>
+                            <option value="anniversary">💍 ذكرى سنوية</option>
+                            <option value="trip">🏖️ رحلة</option>
+                            <option value="event">📅 مناسبة</option>
+                            <option value="other">⭐ أخرى</option>
+                          </select>
+                          <button onClick={addEvent} style={{ ...s.btn, padding: '10px', fontSize: 13 }}>حفظ ✓</button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                      {sortedEvents.map((e, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: e.color + '20', border: `1px solid ${e.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{e.emoji}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{e.title}</div>
+                            <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{e.date}</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 16, color: e.color }}>{daysUntil(e.date)}</div>
+                            <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>يوم</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {page === 'notifications' && (
             <div>
               <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>🔔 الإشعارات</h2>
-              <div style={{ ...s.card, marginBottom: 16 }}>
+              <div style={s.card}>
                 <div style={s.cardHeader}>
                   <span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>كل الإشعارات ({notifications.length})</span>
                   <button onClick={markAllRead} style={{ background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', color: '#c0392b', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 13 }}>قراءة الكل ✓</button>
                 </div>
-                {notifications.length === 0 ? (
-                  <div style={{ padding: 40, textAlign: 'center' }}>
-                    <div style={{ fontSize: 50, marginBottom: 12 }}>🔔</div>
-                    <p style={{ fontFamily: 'Tajawal, sans-serif', color: 'rgba(255,255,255,0.5)' }}>لا توجد إشعارات</p>
-                  </div>
-                ) : (
-                  notifications.map(n => (
-                    <div key={n.id} onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
-                      style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: n.read ? 'transparent' : 'rgba(192,57,43,0.06)', cursor: 'pointer' }}>
-                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: n.read ? '#444' : '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{n.icon}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 14, marginBottom: 3 }}>{n.title}</div>
-                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{n.body}</div>
-                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{n.time}</div>
-                      </div>
-                      {!n.read && <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#c0392b', flexShrink: 0, marginTop: 6 }}></div>}
+                {notifications.map(n => (
+                  <div key={n.id} onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
+                    style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: n.read ? 'transparent' : 'rgba(192,57,43,0.06)', cursor: 'pointer' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: n.read ? '#444' : '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{n.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: n.read ? 400 : 700, fontSize: 14, marginBottom: 3 }}>{n.title}</div>
+                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{n.body}</div>
+                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{n.time}</div>
                     </div>
-                  ))
-                )}
+                    {!n.read && <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#c0392b', flexShrink: 0, marginTop: 6 }}></div>}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -659,7 +782,7 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div style={{ ...s.card, marginBottom: 20 }}>
+              <div style={s.card}>
                 <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔑 تغيير كلمة المرور</span></div>
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <input type="password" placeholder="كلمة المرور الحالية" value={newPass.current} onChange={e => setNewPass({ ...newPass, current: e.target.value })} style={s.input} />
