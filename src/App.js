@@ -11,9 +11,9 @@ L.Icon.Default.mergeOptions({
 });
 
 const USERS = [
-  { id: 1, name: 'رأفت', email: 'rafat@familia-alawar.com', password: 'Rafat1983', emoji: '👨', role: 'الأب' },
-  { id: 2, name: 'نور', email: 'esposa@familia-alawar.com', password: 'Esposa2024', emoji: '👩', role: 'الأم' },
-  { id: 3, name: 'جود', email: 'hijo@familia-alawar.com', password: 'Hijo2024', emoji: '👦', role: 'الابن' },
+  { id: 1, name: 'رأفت', email: 'rafat@familia-alawar.com', password: 'Rafat1983', emoji: '👨', role: 'الأب', birthday: '1983-01-01', location: 'كوستاريكا', phone: '+506 6374 6666' },
+  { id: 2, name: 'نور', email: 'esposa@familia-alawar.com', password: 'Esposa2024', emoji: '👩', role: 'الأم', birthday: '1985-05-15', location: 'كوستاريكا', phone: '' },
+  { id: 3, name: 'جود', email: 'hijo@familia-alawar.com', password: 'Hijo2024', emoji: '👦', role: 'الابن', birthday: '2010-03-20', location: 'المدرسة', phone: '' },
 ];
 
 const C = { bg: '#333333', header: '#c0392b', btn: '#c0392b', surface: '#3d3d3d', border: 'rgba(255,255,255,0.08)' };
@@ -60,6 +60,7 @@ const NAV = [
   { id: 'chat', label: 'الدردشة', icon: '💬' },
   { id: 'call', label: 'الاتصال', icon: '📞' },
   { id: 'map', label: 'الخريطة', icon: '🗺️' },
+  { id: 'profile', label: 'ملفي', icon: '👤' },
   { id: 'sos', label: 'الطوارئ', icon: '🆘' },
 ];
 
@@ -71,10 +72,10 @@ const MEMBERS = [
 ];
 
 const FAMILY_LOCATIONS = [
-  { name: 'رأفت', emoji: '👨', position: [9.9281, -84.0907], color: '#2ecc71', place: 'كوستاريكا' },
-  { name: 'نور', emoji: '👩', position: [9.9300, -84.0850], color: '#2ecc71', place: 'كوستاريكا' },
-  { name: 'جود', emoji: '👦', position: [9.9250, -84.0950], color: '#f39c12', place: 'المدرسة' },
-  { name: 'البنت', emoji: '👧', position: [9.9281, -84.0907], color: '#2ecc71', place: 'المنزل' },
+  { name: 'رأفت', emoji: '👨', position: [9.9281, -84.0907], place: 'كوستاريكا' },
+  { name: 'نور', emoji: '👩', position: [9.9300, -84.0850], place: 'كوستاريكا' },
+  { name: 'جود', emoji: '👦', position: [9.9250, -84.0950], place: 'المدرسة' },
+  { name: 'البنت', emoji: '👧', position: [9.9281, -84.0907], place: 'المنزل' },
 ];
 
 export default function App() {
@@ -100,6 +101,8 @@ export default function App() {
   const [replyTo, setReplyTo] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [newPass, setNewPass] = useState({ current: '', new: '', confirm: '' });
+  const [passMsg, setPassMsg] = useState('');
 
   const handleLogin = () => {
     const found = USERS.find(u => u.email === loginData.email && u.password === loginData.password);
@@ -172,6 +175,15 @@ export default function App() {
       ? m.room === 'group' || !m.room
       : (m.room === chatRoom || m.to === chatRoom) && (m.sender === user?.name || m.to === user?.name || m.room === chatRoom)
   );
+
+  const handleChangePass = () => {
+    if (newPass.current !== user.password) { setPassMsg('❌ كلمة المرور الحالية غلط!'); return; }
+    if (newPass.new !== newPass.confirm) { setPassMsg('❌ كلمة المرور الجديدة غير متطابقة!'); return; }
+    if (newPass.new.length < 6) { setPassMsg('❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل!'); return; }
+    user.password = newPass.new;
+    setPassMsg('✅ تم تغيير كلمة المرور بنجاح!');
+    setNewPass({ current: '', new: '', confirm: '' });
+  };
 
   if (!user) {
     return (
@@ -402,7 +414,7 @@ export default function App() {
                 </div>
                 {MEMBERS.filter(m => m.name !== user.name).map((m, i) => (
                   <div key={i} onClick={() => setChatRoom(m.name)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer', background: chatRoom === m.name ? 'rgba(192,57,43,0.2)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.06)', borderRight: chatRoom === m.name ? '3px solid #c0392b' : '3px solid transparent' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
                     <div>
                       <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 13 }}>{m.name}</div>
                       <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 11, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
@@ -444,20 +456,17 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-
                 {replyTo && (
                   <div style={{ padding: '8px 16px', background: 'rgba(192,57,43,0.1)', borderTop: '1px solid rgba(192,57,43,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>↩️ رد على: {replyTo.text?.substring(0, 30)}</span>
                     <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}>✕</button>
                   </div>
                 )}
-
                 <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6 }}>
                   {['😊','😂','❤️','👍','🎉','😢','😮','🙏','👋','🔥'].map(emoji => (
                     <button key={emoji} onClick={() => setMsg(prev => prev + emoji)} style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', padding: '3px' }}>{emoji}</button>
                   ))}
                 </div>
-
                 <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input type="file" accept="image/*" id="chatImage" style={{ display: 'none' }}
                     onChange={e => {
@@ -527,10 +536,7 @@ export default function App() {
                   <span style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: '#2ecc71' }}>● مباشر</span>
                 </div>
                 <MapContainer center={[9.9281, -84.0907]} zoom={13} style={{ height: 500, width: '100%' }}>
-                  <TileLayer
-                    attribution='© OpenStreetMap'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
+                  <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   {FAMILY_LOCATIONS.map((loc, i) => (
                     <Marker key={i} position={loc.position}>
                       <Popup>
@@ -543,6 +549,60 @@ export default function App() {
                     </Marker>
                   ))}
                 </MapContainer>
+              </div>
+            </div>
+          )}
+
+          {page === 'profile' && (
+            <div>
+              <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, marginBottom: 20, fontSize: 22 }}>👤 ملفي الشخصي</h2>
+              <div style={{ ...s.card, marginBottom: 20 }}>
+                <div style={{ background: '#c0392b', padding: '40px 24px', textAlign: 'center' }}>
+                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, margin: '0 auto 12px' }}>{user.emoji}</div>
+                  <h2 style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 22, margin: '0 0 4px' }}>{user.name}</h2>
+                  <p style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 14, opacity: 0.85, margin: 0 }}>{user.role} — Familia Alawar</p>
+                </div>
+                <div style={{ padding: 24 }}>
+                  {[
+                    { icon: '📧', label: 'الإيميل', value: user.email },
+                    { icon: '📱', label: 'الهاتف', value: user.phone || 'غير محدد' },
+                    { icon: '📍', label: 'الموقع', value: user.location || 'غير محدد' },
+                    { icon: '🎂', label: 'تاريخ الميلاد', value: user.birthday || 'غير محدد' },
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                      <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{item.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>{item.label}</div>
+                        <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 600, fontSize: 14 }}>{item.value}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ ...s.card, marginBottom: 20 }}>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>🔑 تغيير كلمة المرور</span></div>
+                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <input type="password" placeholder="كلمة المرور الحالية" value={newPass.current} onChange={e => setNewPass({ ...newPass, current: e.target.value })} style={s.input} />
+                  <input type="password" placeholder="كلمة المرور الجديدة" value={newPass.new} onChange={e => setNewPass({ ...newPass, new: e.target.value })} style={s.input} />
+                  <input type="password" placeholder="تأكيد كلمة المرور الجديدة" value={newPass.confirm} onChange={e => setNewPass({ ...newPass, confirm: e.target.value })} style={s.input} />
+                  {passMsg && <div style={{ background: passMsg.includes('✅') ? 'rgba(46,204,113,0.1)' : 'rgba(192,57,43,0.1)', border: `1px solid ${passMsg.includes('✅') ? 'rgba(46,204,113,0.3)' : 'rgba(192,57,43,0.3)'}`, borderRadius: 10, padding: '10px', color: passMsg.includes('✅') ? '#2ecc71' : '#ff6b6b', fontSize: 13, fontFamily: 'Tajawal, sans-serif' }}>{passMsg}</div>}
+                  <button onClick={handleChangePass} style={{ ...s.btn, width: 'auto', padding: '10px 24px' }}>حفظ التغييرات ✓</button>
+                </div>
+              </div>
+
+              <div style={s.card}>
+                <div style={s.cardHeader}><span style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700 }}>👨‍👩‍👧‍👦 أفراد العائلة</span></div>
+                {MEMBERS.map((m, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, border: `2px solid ${m.status === 'online' ? '#2ecc71' : '#f39c12'}` }}>{m.emoji}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'Cairo, sans-serif', fontWeight: 700, fontSize: 14 }}>{m.name}</div>
+                      <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>📍 {m.location}</div>
+                    </div>
+                    <div style={{ fontFamily: 'Tajawal, sans-serif', fontSize: 12, color: m.status === 'online' ? '#2ecc71' : '#f39c12' }}>{m.status === 'online' ? '● متصل' : '● بعيد'}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
